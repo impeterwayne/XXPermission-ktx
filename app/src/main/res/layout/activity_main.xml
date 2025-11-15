@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    tools:context=".MainActivity">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_test_permission"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Basic Permission"
+        android:layout_marginHorizontal="12dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_check_restrict"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Check Restrict"
+        android:layout_marginHorizontal="12dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_sequence_permission"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sequence Permission"
+        android:layout_marginHorizontal="12dp"/>
+
+</LinearLayout>
