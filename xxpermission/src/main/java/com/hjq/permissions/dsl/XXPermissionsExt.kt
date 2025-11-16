@@ -4,6 +4,7 @@ package com.hjq.permissions.dsl
 
 import android.app.Activity
 import android.app.Fragment
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.OnPermissionDescription
@@ -12,6 +13,7 @@ import com.hjq.permissions.XXPermissions
 import com.hjq.permissions.fragment.factory.PermissionFragmentFactory
 import com.hjq.permissions.permission.PermissionChannel
 import com.hjq.permissions.permission.base.IPermission
+import com.hjq.permissions.permission.common.SpecialPermission
 import com.hjq.permissions.start.StartActivityAgent
 import com.hjq.permissions.tools.PermissionSettingPage
 
@@ -110,14 +112,22 @@ class XXPermissionsExt private constructor(private val activity: Activity) {
                             return
                         }
 
-                        // Build a list of permissions that need rationale (dangerous permissions only)
+                        // Build a list of permissions that need rationale
                         val rationalePermissions = requestList.filter { perm ->
                             try {
-                                perm.getPermissionChannel(activity) != PermissionChannel.START_ACTIVITY_FOR_RESULT &&
+                                if (perm.getPermissionChannel(activity) != PermissionChannel.START_ACTIVITY_FOR_RESULT) {
+                                    // For dangerous permissions, use the standard API
                                     ActivityCompat.shouldShowRequestPermissionRationale(
                                         activity,
                                         perm.getRequestPermissionName(activity)
                                     )
+                                } else if (perm is SpecialPermission) {
+                                    // For special permissions, show rationale if not granted,
+                                    // as we are about to ask the user to go to settings.
+                                    !perm.isGrantedPermission(activity)
+                                } else {
+                                    false
+                                }
                             } catch (_: Exception) {
                                 false
                             }
