@@ -14,7 +14,7 @@ Add the following dependency to your `build.gradle` file:
 
 ```groovy
 dependencies {
-    implementation 'io.github.impeterwayne:xxpermission-ktx:1.0.0'
+    implementation 'io.github.impeterwayne:xxpermission-ktx:1.0.1'
 }
 ```
 
