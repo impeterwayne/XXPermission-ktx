@@ -1,5 +1,10 @@
+plugins {
+    id("maven-publish")
+    id("com.vanniktech.maven.publish") version "0.35.0"
+}
 apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.android'
+
 
 android {
     compileSdk 36
