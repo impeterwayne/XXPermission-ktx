@@ -12,23 +12,20 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import com.hjq.permissions.manifest.AndroidManifestInfo;
 import com.hjq.permissions.manifest.node.PermissionManifestInfo;
-import com.hjq.permissions.tools.PermissionVersion;
 import com.hjq.permissions.tools.PermissionSettingPage;
 import com.hjq.permissions.tools.PermissionUtils;
+import com.hjq.permissions.tools.PermissionVersion;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Base class for permissions
+ * Base permission class.
  */
 public abstract class BasePermission implements IPermission {
 
-    /** Op permission mode: unknown mode */
+    /** Op permission mode, unknown */
     public static final int MODE_UNKNOWN = -1;
 
     protected BasePermission() {
@@ -57,13 +54,12 @@ public abstract class BasePermission implements IPermission {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        // If the object to compare has the same memory address as this one, return true
+        // If the compared object is the same instance as the current object, return true.
         if (obj == this) {
             return true;
         }
-        // Overriding equals allows List and Map collections to distinguish
-        // whether two different permission objects represent the same permission.
-        // If their names are the same, treat them as the same permission.
+        // equals is overridden so List and Map collections can determine whether different permission objects represent the same permission.
+        // If the two permission objects have the same name, treat them as the same permission.
         if (obj instanceof IPermission) {
             return PermissionUtils.equalsPermission(this, ((IPermission) obj));
         } else if (obj instanceof String) {
@@ -101,41 +97,41 @@ public abstract class BasePermission implements IPermission {
     public void checkCompliance(@NonNull Activity activity,
                                 @NonNull List<IPermission> requestList,
                                 @Nullable AndroidManifestInfo manifestInfo) {
-        // Check if targetSdkVersion meets requirements
+        // Check whether targetSdkVersion meets the requirement.
         checkSelfByTargetSdkVersion(activity);
-        // Check if AndroidManifest.xml meets requirements
+        // Check whether AndroidManifest.xml meets the requirement.
         if (manifestInfo != null) {
             List<PermissionManifestInfo> permissionInfoList = manifestInfo.permissionInfoList;
             PermissionManifestInfo currentPermissionInfo = findPermissionInfoByList(permissionInfoList, getPermissionName());
             checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
         }
-        // Check if the requested permission list meets requirements
+        // Check whether the requested permission list meets the requirement.
         checkSelfByRequestPermissions(activity, requestList);
     }
 
     /**
-     * Check if targetSdkVersion meets requirements; if not, throw an exception
+     * Check whether targetSdkVersion meets the requirement., and throw an exception if it does not
      */
     protected void checkSelfByTargetSdkVersion(@NonNull Context context) {
         int minTargetSdkVersion = getMinTargetSdkVersion(context);
-        // Must set the correct targetSdkVersion to detect permissions correctly
-        if (PermissionVersion.getTargetVersion(context) >= minTargetSdkVersion) {
+        // A correct targetSdkVersion is required for permission checks to work properly.
+        if (PermissionVersion.getTargetSdkVersion(context) >= minTargetSdkVersion) {
             return;
         }
 
         throw new IllegalStateException("Request \"" + getPermissionName() + "\" permission, " +
-                "The targetSdkVersion SDK must be " + minTargetSdkVersion +
-                " or more, if you do not want to upgrade targetSdkVersion, " +
-                "please apply with the old permission");
+            "The targetSdkVersion SDK must be " + minTargetSdkVersion +
+            " or more, if you do not want to upgrade targetSdkVersion, " +
+            "please apply with the old permission");
     }
 
     /**
-     * Whether the current permission is statically declared in the manifest file
+     * Whether the current permission is declared statically in the manifest.
      */
     protected abstract boolean isRegisterPermissionByManifestFile();
 
     /**
-     * Check if AndroidManifest.xml meets requirements; if not, throw an exception
+     * Check whether AndroidManifest.xml meets the requirement., and throw an exception if it does not
      */
     protected void checkSelfByManifestFile(@NonNull Activity activity,
                                            @NonNull List<IPermission> requestList,
@@ -145,21 +141,20 @@ public abstract class BasePermission implements IPermission {
         if (!isRegisterPermissionByManifestFile()) {
             return;
         }
-        // Check whether the current permission is declared in the manifest file,
-        // and also check if the declared maxSdkVersion attribute has issues
+        // Check whether the current permission is statically declared in the manifest file, If it is declared, also check whether the declared maxSdkVersion attribute is valid
         checkPermissionRegistrationStatus(currentPermissionInfo, getPermissionName());
     }
 
     /**
-     * Check if the requested permission list meets requirements; if not, throw an exception
+     * Check whether the requested permission list meets the requirement., and throw an exception if it does not
      */
     protected void checkSelfByRequestPermissions(@NonNull Activity activity, @NonNull List<IPermission> requestList) {
         // default implementation ignored
-        // No default implementation, left for subclasses to handle
+        // There is no default implementation here; subclasses handle it themselves.
     }
 
     /**
-     * Check the registration status of the permission, throws exception if invalid
+     * Check the permission registration state and throw an exception when it is invalid.
      */
     protected static void checkPermissionRegistrationStatus(@Nullable PermissionManifestInfo permissionInfo,
                                                             @NonNull String checkPermission) {
@@ -185,39 +180,35 @@ public abstract class BasePermission implements IPermission {
                                                             @NonNull String checkPermission,
                                                             int lowestMaxSdkVersion) {
         if (permissionInfo == null) {
-            // The dynamically requested permission is not declared in the manifest file; two possibilities:
-            // 1. If your project did not declare this permission, simply add it in the manifest file.
-            // 2. If you did declare it, check whether the compiled apk contains it. If not,
-            //    the framework’s judgment is correct.
-            //    Usually caused by a third-party SDK or framework declaring:
-            //    <uses-permission android:name="xxx" tools:node="remove"/>
-            //    Fix: declare <uses-permission android:name="xxx" tools:node="replace"/> in your project to override.
-            // Example: https://github.com/getActivity/XXPermissions/issues/98
+            // A dynamically requested permission is not declared in the manifest file, There are two common cases:
+            // 1. If your project does not declare this permission in the manifest file, simply declare it in the manifest file
+            // 2. If your project clearly already declares this permission, check whether the built APK actually contains that permission, If it does not, then the framework check is correct
+            // This is usually caused by a third-party SDK or framework declaring <uses-permission android:name="xxx" tools:node="remove"/>
+            // The fix is simple, declare <uses-permission android:name="xxx" tools:node="replace"/> to replace the original configuration
+            // Concrete example: https://github.com/getActivity/XXPermissions/issues/98
             throw new IllegalStateException("Please register permissions in the AndroidManifest.xml file " +
-                    "<uses-permission android:name=\"" + checkPermission + "\" />");
+                "<uses-permission android:name=\"" + checkPermission + "\" />");
         }
 
         int manifestMaxSdkVersion = permissionInfo.maxSdkVersion;
         if (manifestMaxSdkVersion < lowestMaxSdkVersion) {
-            // The maxSdkVersion declared in the manifest file does not meet the minimum requirement; two possibilities:
-            // 1. If you declared this attribute, modify or remove it according to the error message.
-            // 2. If you did not declare it, check if the compiled apk contains it. If so,
-            //    the framework’s judgment is correct.
-            //    Usually caused by a third-party SDK or framework declaring:
-            //    <uses-permission android:name="xxx" android:maxSdkVersion="xx"/>
-            //    Fix: declare <uses-permission android:name="xxx" tools:node="replace"/> in your project.
+            // The maxSdkVersion of the permission declared in the manifest file does not meet the minimum requirement, There are two common cases:
+            // 1. If your project declared that attribute, modify maxSdkVersion or remove the maxSdkVersion attribute
+            // 2. If you clearly never declared maxSdkVersion attribute, check whether the built APK contains that attribute, If it exists there, then the framework check is correct
+            // This is usually caused by a third-party SDK or framework declaring <uses-permission android:name="xxx" android:maxSdkVersion="xx"/>
+            // The fix is simple, declare <uses-permission android:name="xxx" tools:node="replace"/> to replace the original configuration
             throw new IllegalArgumentException("The AndroidManifest.xml file " +
-                    "<uses-permission android:name=\"" + checkPermission +
-                    "\" android:maxSdkVersion=\"" + manifestMaxSdkVersion +
-                    "\" /> does not meet the requirements, " +
-                    (lowestMaxSdkVersion != PermissionManifestInfo.DEFAULT_MAX_SDK_VERSION ?
-                            "the minimum requirement for maxSdkVersion is " + lowestMaxSdkVersion :
-                            "please delete the android:maxSdkVersion=\"" + manifestMaxSdkVersion + "\" attribute"));
+                "<uses-permission android:name=\"" + checkPermission +
+                "\" android:maxSdkVersion=\"" + manifestMaxSdkVersion +
+                "\" /> does not meet the requirements, " +
+                (lowestMaxSdkVersion != PermissionManifestInfo.DEFAULT_MAX_SDK_VERSION ?
+                    "the minimum requirement for maxSdkVersion is " + lowestMaxSdkVersion :
+                    "please delete the android:maxSdkVersion=\"" + manifestMaxSdkVersion + "\" attribute"));
         }
     }
 
     /**
-     * Get the current project's minSdkVersion
+     * Get the current project minSdkVersion.
      */
     protected static int getMinSdkVersion(@NonNull Context context, @Nullable AndroidManifestInfo manifestInfo) {
         if (PermissionVersion.isAndroid7()) {
@@ -231,7 +222,7 @@ public abstract class BasePermission implements IPermission {
     }
 
     /**
-     * Get a specific permission info from the list
+     * Get the specified permission info from the permission list.
      */
     @Nullable
     public static PermissionManifestInfo findPermissionInfoByList(@NonNull List<PermissionManifestInfo> permissionInfoList,
@@ -247,7 +238,7 @@ public abstract class BasePermission implements IPermission {
     }
 
     /**
-     * Check if a dangerous permission is granted
+     * Check whether a dangerous permission has been granted.
      */
     @RequiresApi(PermissionVersion.ANDROID_6)
     public static boolean checkSelfPermission(@NonNull Context context, @NonNull String permission) {
@@ -255,20 +246,20 @@ public abstract class BasePermission implements IPermission {
     }
 
     /**
-     * Check whether to show a rationale for requesting the permission
+     * Check whether a permission rationale should be shown to the user.
      */
     @RequiresApi(PermissionVersion.ANDROID_6)
     @SuppressWarnings({"JavaReflectionMemberAccess", "ConstantConditions", "BooleanMethodIsAlwaysInverted"})
     public static boolean shouldShowRequestPermissionRationale(@NonNull Activity activity, @NonNull String permission) {
-        // Fix for memory leak when calling shouldShowRequestPermissionRationale on Android 12.
-        // Android 12L and Android 13 tested fine, Google has fixed it there.
-        // But Android 12 still has this historical issue, unavoidable for all Android developers.
-        // Issue: https://github.com/getActivity/XXPermissions/issues/133
-        if (PermissionVersion.getCurrentVersion() == PermissionVersion.ANDROID_12) {
+        // Work around the memory leak that occurs on Android 12 when calling shouldShowRequestPermissionRationale
+        // Android 12L and Android 13 versions tested do not have this issue, which shows that Google fixed this issue in newer versions
+        // However, on Android 12 it is still a legacy issue, this is something all Android app developers still have to deal with
+        // issue : https://github.com/getActivity/XXPermissions/issues/133
+        if (PermissionVersion.getSdkVersion() == PermissionVersion.ANDROID_12) {
             try {
-                // Also contributed a free fix to Google’s AndroidX project; merge request accepted.
-                // This should solve memory leaks on nearly 1 billion Android 12 devices.
-                // Pull Request: https://github.com/androidx/androidx/pull/435
+                // In addition, for this issue, I also contributed a fix to the AndroidX project, and the merge request has already been merged into the main branch
+                // I believe this contribution helps address the memory leak on a very large number of Android 12 devices
+                // Pull Request : https://github.com/androidx/androidx/pull/435
                 PackageManager packageManager = activity.getApplication().getPackageManager();
                 Method method = PackageManager.class.getMethod("shouldShowRequestPermissionRationale", String.class);
                 return (boolean) method.invoke(packageManager, permission);
@@ -280,10 +271,10 @@ public abstract class BasePermission implements IPermission {
     }
 
     /**
-     * Use AppOpsManager to check whether a permission is granted
+     * Checks whether a permission is granted through AppOpsManager.
      *
-     * @param opName               must be a field from {@link AppOpsManager} starting with OPSTR
-     * @param defaultGranted       return granted if the status cannot be determined
+     * @param opName the AppOpsManager field whose name starts with OPSTR
+     * @param defaultGranted whether to treat an unknown state as granted
      */
     @RequiresApi(PermissionVersion.ANDROID_4_4)
     public static boolean checkOpPermission(@NonNull Context context, @NonNull String opName, boolean defaultGranted) {
@@ -295,11 +286,11 @@ public abstract class BasePermission implements IPermission {
     }
 
     /**
-     * Use AppOpsManager to check whether a permission is granted
+     * Checks whether a permission is granted through AppOpsManager.
      *
-     * @param opFieldName          field name in {@link AppOpsManager}
-     * @param opDefaultValue       fallback value if reflection fails
-     * @param defaultGranted       return granted if the status cannot be determined
+     * @param opFieldName the AppOpsManager field name to resolve through reflection
+     * @param opDefaultValue the fallback value to use when reflection fails
+     * @param defaultGranted whether to treat an unknown state as granted
      */
     @RequiresApi(PermissionVersion.ANDROID_4_4)
     public static boolean checkOpPermission(@NonNull Context context,
@@ -314,9 +305,9 @@ public abstract class BasePermission implements IPermission {
     }
 
     /**
-     * Get the status of a permission from AppOpsManager
+     * Returns the AppOpsManager state for a permission.
      *
-     * @param opName               must be a field from {@link AppOpsManager} starting with OPSTR
+     * @param opName the AppOpsManager field whose name starts with OPSTR
      */
     @RequiresApi(PermissionVersion.ANDROID_4_4)
     @SuppressWarnings("deprecation")
@@ -327,7 +318,7 @@ public abstract class BasePermission implements IPermission {
         } else {
             appOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
         }
-        // This SystemService should never be null, but defensive programming just in case
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (appOpsManager == null) {
             return MODE_UNKNOWN;
         }
@@ -344,10 +335,10 @@ public abstract class BasePermission implements IPermission {
     }
 
     /**
-     * Get the status of a permission from AppOpsManager
+     * Returns the AppOpsManager state for a permission.
      *
-     * @param opName                field name in {@link AppOpsManager}
-     * @param opDefaultValue        fallback value if reflection fails
+     * @param opName the AppOpsManager field name to resolve through reflection
+     * @param opDefaultValue the fallback value to use when reflection fails
      */
     @SuppressWarnings("ConstantConditions")
     @RequiresApi(PermissionVersion.ANDROID_4_4)
@@ -358,7 +349,7 @@ public abstract class BasePermission implements IPermission {
         } else {
             appOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
         }
-        // This SystemService should never be null, but defensive programming just in case
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (appOpsManager == null) {
             return MODE_UNKNOWN;
         }
@@ -367,7 +358,7 @@ public abstract class BasePermission implements IPermission {
             int opValue;
             try {
                 Field opField = appOpsClass.getDeclaredField(opName);
-                opValue = (int) opField.get(Integer.class);
+                opValue = opField.getInt(null);
             } catch (NoSuchFieldException e) {
                 opValue = opDefaultValue;
             }
@@ -380,16 +371,16 @@ public abstract class BasePermission implements IPermission {
     }
 
     /**
-     * Check whether AppOpsManager contains a specific Op permission
+     * Returns whether AppOpsManager contains the given op field.
      *
-     * @param opName                field name in {@link AppOpsManager}
+     * @param opName the AppOpsManager field name to check
      */
     @RequiresApi(PermissionVersion.ANDROID_4_4)
     public static boolean isExistOpPermission(String opName) {
         try {
             Class<?> appOpsClass = Class.forName(AppOpsManager.class.getName());
             appOpsClass.getDeclaredField(opName);
-            // Field exists, return true
+            // If the field exists, return true.
             return true;
         } catch (Exception ignored) {
             // default implementation ignored

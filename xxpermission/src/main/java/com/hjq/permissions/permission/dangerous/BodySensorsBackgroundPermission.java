@@ -20,18 +20,11 @@ import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Background body sensor permission class
+ * Background sensors permission class.
  */
 public final class BodySensorsBackgroundPermission extends DangerousPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is for internal framework use only and should not be referenced externally.
-     * If you need the permission name string, please use the {@link PermissionNames} class.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.BODY_SENSORS_BACKGROUND;
 
     public static final Parcelable.Creator<BodySensorsBackgroundPermission> CREATOR = new Parcelable.Creator<BodySensorsBackgroundPermission>() {
@@ -64,7 +57,9 @@ public final class BodySensorsBackgroundPermission extends DangerousPermission {
     @NonNull
     @Override
     public PermissionPageType getPermissionPageType(@NonNull Context context) {
-        if (DeviceOs.isHyperOs() || DeviceOs.isMiui()) {
+        // background sensors permission HyperOS, MIUI, MagicOS, HarmonyOS, EMUI has consistently been a transparent Activity
+        if (DeviceOs.isHyperOs() || DeviceOs.isMiui() || DeviceOs.isMagicOs() ||
+            DeviceOs.isHarmonyOs() || DeviceOs.isHarmonyOsNextAndroidCompatible() || DeviceOs.isEmui()) {
             return PermissionPageType.TRANSPARENT_ACTIVITY;
         }
         return PermissionPageType.OPAQUE_ACTIVITY;
@@ -88,14 +83,13 @@ public final class BodySensorsBackgroundPermission extends DangerousPermission {
 
     @Override
     public boolean isBackgroundPermission(@NonNull Context context) {
-        // Indicates this is a background permission
+        // Indicates that the current permission is a background permission
         return true;
     }
 
     @Override
     protected boolean isGrantedPermissionByStandardVersion(@NonNull Context context, boolean skipRequest) {
-        // Before granting background body sensors permission, check that foreground body sensors is granted.
-        // If the foreground permission is not granted, the background one is useless even if granted.
+        // checkbackground sensors permissiongrantedearlier, need to checkforegroundsensorspermission is granted, If the foregroundsensorspermissionnot granted, background sensors permission granted
         if (!PermissionLists.getBodySensorsPermission().isGrantedPermission(context, skipRequest)) {
             return false;
         }
@@ -109,8 +103,7 @@ public final class BodySensorsBackgroundPermission extends DangerousPermission {
 
     @Override
     protected boolean isDoNotAskAgainPermissionByStandardVersion(@NonNull Activity activity) {
-        // If foreground body sensors is not granted, the "don’t ask again" state of background
-        // body sensors follows the foreground one
+        // If the foregroundsensorspermissionnot granted, background sensors permissionDo not ask again state should follow theforegroundsensorspermission
         if (!PermissionLists.getBodySensorsPermission().isGrantedPermission(activity)) {
             return PermissionLists.getBodySensorsPermission().isDoNotAskAgainPermission(activity);
         }
@@ -124,57 +117,53 @@ public final class BodySensorsBackgroundPermission extends DangerousPermission {
 
     @Override
     public int getRequestIntervalTime(@NonNull Context context) {
-        // On Android 13 devices, requesting foreground sensors immediately followed by
-        // background sensors often fails. To avoid this, add a short delay.
-        // Why 150ms? Tests showed 100ms still occasionally failed, but 150ms worked consistently.
+        // , Android 13 devices, requestforeground permission, requestbackground permission will failure
+        // hereto avoid this case, so a small delay is added, which avoids the problem
+        // Why is the delay 150 milliseconds? In practice, 100 ms can still fail occasionally, but 150 ms worked reliably in repeated tests
         return isSupportRequestPermission(context) ? 150 : 0;
     }
 
     @Override
     protected void checkSelfByManifestFile(@NonNull Activity activity,
-                                           @NonNull List<IPermission> requestList,
-                                           @NonNull AndroidManifestInfo manifestInfo,
-                                           @NonNull List<PermissionManifestInfo> permissionInfoList,
-                                           @Nullable PermissionManifestInfo currentPermissionInfo) {
+                                            @NonNull List<IPermission> requestList,
+                                            @NonNull AndroidManifestInfo manifestInfo,
+                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
+                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
-        // Requesting background body sensors requires foreground body sensors to be registered in manifest
+        // requestbackground sensorspermissionmust declareforeground sensorspermission
         checkPermissionRegistrationStatus(permissionInfoList, PermissionNames.BODY_SENSORS);
     }
 
     @Override
     protected void checkSelfByRequestPermissions(@NonNull Activity activity, @NonNull List<IPermission> requestList) {
         super.checkSelfByRequestPermissions(activity, requestList);
-
-        // When targetSdkVersion >= 36, BODY_SENSORS_BACKGROUND should not be requested.
-        // Instead, request READ_HEALTH_DATA_IN_BACKGROUND permission.
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_16) {
-            throw new IllegalArgumentException("When the project targetSdkVersion is greater than or equal to " +
-                    PermissionVersion.ANDROID_16 + ", the \"" + getPermissionName() +
-                    "\" permission cannot be requested. Use \"" +
-                    PermissionNames.READ_HEALTH_DATA_IN_BACKGROUND + "\" instead.");
+        // Whenproject targetSdkVersion >= 36 , cannot request BODY_SENSORS_BACKGROUND permission, requestread health data in the background permission: READ_HEALTH_DATA_IN_BACKGROUND
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_16) {
+            throw new IllegalArgumentException("When the project targetSdkVersion is greater than or equal to " + PermissionVersion.ANDROID_16 +
+                                                ", the \"" + getPermissionName() + "\" permission cannot be requested, but the \"" +
+                                                PermissionNames.READ_HEALTH_DATA_IN_BACKGROUND + "\" permission should be requested instead");
         }
 
-        // Foreground body sensors must be requested before requesting background body sensors
+        // must requestforegroundsensorspermission requestbackground sensors permission
         if (!PermissionUtils.containsPermission(requestList, PermissionNames.BODY_SENSORS)) {
-            throw new IllegalArgumentException("Applying for background sensor permissions must include \"" +
-                    PermissionNames.BODY_SENSORS + "\"");
+            throw new IllegalArgumentException("Applying for background sensor permissions must contain \"" + PermissionNames.BODY_SENSORS + "\"");
         }
 
         int thisPermissionIndex = -1;
-        int bodySensorsPermissionIndex = -1;
+        int bodySensorsPermissionindex = -1;
         for (int i = 0; i < requestList.size(); i++) {
             IPermission permission = requestList.get(i);
             if (PermissionUtils.equalsPermission(permission, this)) {
                 thisPermissionIndex = i;
             } else if (PermissionUtils.equalsPermission(permission, PermissionNames.BODY_SENSORS)) {
-                bodySensorsPermissionIndex = i;
+                bodySensorsPermissionindex = i;
             }
         }
 
-        if (bodySensorsPermissionIndex != -1 && bodySensorsPermissionIndex > thisPermissionIndex) {
-            // Place BODY_SENSORS_BACKGROUND after BODY_SENSORS
+        if (bodySensorsPermissionindex != -1 && bodySensorsPermissionindex > thisPermissionIndex) {
+            // Please place the BODY_SENSORS_BACKGROUND permission after the BODY_SENSORS permission.
             throw new IllegalArgumentException("Please place the " + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.BODY_SENSORS + "\" permission");
+                "\" permission after the \"" + PermissionNames.BODY_SENSORS + "\" permission");
         }
     }
 }

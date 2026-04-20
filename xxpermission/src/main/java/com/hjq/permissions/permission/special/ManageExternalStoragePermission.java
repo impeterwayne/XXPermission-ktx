@@ -16,24 +16,17 @@ import com.hjq.permissions.permission.PermissionLists;
 import com.hjq.permissions.permission.PermissionNames;
 import com.hjq.permissions.permission.base.IPermission;
 import com.hjq.permissions.permission.common.SpecialPermission;
-import com.hjq.permissions.tools.PermissionVersion;
 import com.hjq.permissions.tools.PermissionUtils;
+import com.hjq.permissions.tools.PermissionVersion;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : All files access permission class
+ * All files access permission class.
  */
 public final class ManageExternalStoragePermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.MANAGE_EXTERNAL_STORAGE;
 
     public static final Parcelable.Creator<ManageExternalStoragePermission> CREATOR = new Parcelable.Creator<ManageExternalStoragePermission>() {
@@ -71,24 +64,24 @@ public final class ManageExternalStoragePermission extends SpecialPermission {
     @NonNull
     @Override
     public List<IPermission> getOldPermissions(Context context) {
-        // On Android 10 and below, accessing full file management requires read/write external storage permissions
+        // Android 11 below manageneed to storage permission
         return PermissionUtils.asArrayList(PermissionLists.getReadExternalStoragePermission(),
-                PermissionLists.getWriteExternalStoragePermission());
+                                            PermissionLists.getWriteExternalStoragePermission());
     }
 
     @Override
     public boolean isGrantedPermission(@NonNull Context context, boolean skipRequest) {
         if (!PermissionVersion.isAndroid11()) {
-            // This is a historical issue on Android 10: if applying for MANAGE_EXTERNAL_STORAGE permission,
-            // you must register android:requestLegacyExternalStorage="true" in AndroidManifest.xml
-            // API Environment.isExternalStorageLegacy explanation: whether non-scoped storage mode is used
+            // Android 10 issue, request MANAGE_EXTERNAL_STORAGE permission
+            // must AndroidManifest.xml declare android:requestLegacyExternalStorage="true"
+            // Environment.isExternalStorageLegacy API : whether storage
             if (PermissionVersion.isAndroid10() && !Environment.isExternalStorageLegacy()) {
                 return false;
             }
             return PermissionLists.getReadExternalStoragePermission().isGrantedPermission(context, skipRequest) &&
-                    PermissionLists.getWriteExternalStoragePermission().isGrantedPermission(context, skipRequest);
+                PermissionLists.getWriteExternalStoragePermission().isGrantedPermission(context, skipRequest);
         }
-        // Whether the app has all files access permission
+        // whether the all-files access permission is granted
         return Environment.isExternalStorageManager();
     }
 
@@ -115,7 +108,7 @@ public final class ManageExternalStoragePermission extends SpecialPermission {
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Indicates that this permission needs to be statically registered in the AndroidManifest.xml file
+        // Indicates that this permission must be declared statically in AndroidManifest.xml.
         return true;
     }
 
@@ -126,15 +119,13 @@ public final class ManageExternalStoragePermission extends SpecialPermission {
                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
-        // If the version where the permission appears is greater than minSdkVersion,
-        // it means that the permission may be requested on older systems,
-        // so old version permissions must be registered in AndroidManifest.xml
+        // If the version where this permission was introduced is lower than minSdkVersion, it may be requested on older systems, so the legacy permission must also be declared in AndroidManifest.xml.
         if (getFromAndroidVersion(activity) > getMinSdkVersion(activity, manifestInfo)) {
             checkPermissionRegistrationStatus(permissionInfoList, PermissionNames.READ_EXTERNAL_STORAGE, PermissionVersion.ANDROID_10);
             checkPermissionRegistrationStatus(permissionInfoList, PermissionNames.WRITE_EXTERNAL_STORAGE, PermissionVersion.ANDROID_10);
         }
 
-        // If applying for Android 10's media location permission, skip this check
+        // If this is the Android 10 media location permission request, skip this check.
         if (PermissionUtils.containsPermission(requestList, PermissionNames.ACCESS_MEDIA_LOCATION)) {
             return;
         }
@@ -144,38 +135,35 @@ public final class ManageExternalStoragePermission extends SpecialPermission {
             return;
         }
 
-        // If targeting Android 10 or above, but the android:requestLegacyExternalStorage attribute is false
-        // (default false if not declared in manifest)
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_10 && !applicationInfo.requestLegacyExternalStorage) {
-            // Please register android:requestLegacyExternalStorage="true" in the Application node of AndroidManifest.xml
-            // Otherwise, even with permission granted, the app cannot properly read/write external storage files on Android 10 devices
-            // If your project has fully adapted scoped storage, register a meta-data tag in the manifest:
-            // <meta-data android:name="ScopedStorage" android:value="true" /> to skip this check
+        // If already Android 10 case , android:requestLegacyExternalStorage attribute false( nodeclare attribute case value false)
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_10 && !applicationInfo.requestLegacyExternalStorage) {
+            // please manifest file Application node declare android:requestLegacyExternalStorage="true" attribute
+            // otherwise request permission, Android 10 device storage
+            // If projectalready storage, please declare in the manifest file meta-data attribute
+            // <meta-data android:name="ScopedStorage" android:value="true" /> check
             throw new IllegalStateException("Please register the android:requestLegacyExternalStorage=\"true\" " +
-                    "attribute in the AndroidManifest.xml file, otherwise it will cause incompatibility with the old version");
+                "attribute in the AndroidManifest.xml file, otherwise it will cause incompatibility with the old version");
         }
     }
 
     @Override
     protected void checkSelfByRequestPermissions(@NonNull Activity activity, @NonNull List<IPermission> requestList) {
         super.checkSelfByRequestPermissions(activity, requestList);
-        // Check if old storage permissions exist. If yes, throw exception.
-        // Do not dynamically request these permissions yourself.
-        // The framework will automatically add and request them on versions below Android 10.
+        // checkwhether has legacy storagepermission, has directly , please runtime request permission
+        // frameworkwill Android 10 below version add request permission
         if (PermissionUtils.containsPermission(requestList, PermissionNames.READ_EXTERNAL_STORAGE) ||
-                PermissionUtils.containsPermission(requestList, PermissionNames.WRITE_EXTERNAL_STORAGE)) {
+            PermissionUtils.containsPermission(requestList, PermissionNames.WRITE_EXTERNAL_STORAGE)) {
             throw new IllegalArgumentException("If you have applied for \"" + getPermissionName() + "\" permissions, " +
-                    "do not apply for the \"" + PermissionNames.READ_EXTERNAL_STORAGE +
-                    "\" or \"" + PermissionNames.WRITE_EXTERNAL_STORAGE + "\" permissions");
+                                                "do not apply for the \"" + PermissionNames.READ_EXTERNAL_STORAGE +
+                                                "\" or \"" + PermissionNames.WRITE_EXTERNAL_STORAGE + "\" permissions");
         }
 
-        // Because the MANAGE_EXTERNAL_STORAGE permission scope is very large,
-        // it already allows reading media files, so there's no need to request additional media permissions
+        // because MANAGE_EXTERNAL_STORAGE permissionscope , has readmedia , need to request media permissions
         if (PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_IMAGES) ||
-                PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_VIDEO) ||
-                PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_AUDIO)) {
+            PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_VIDEO) ||
+            PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_AUDIO)) {
             throw new IllegalArgumentException("Because the \"" + getPermissionName() + "\" permission range is very large, "
-                    + "you can read media files with it, and there is no need to apply for additional media permissions.");
+                + "you can read media files with it, and there is no need to apply for additional media permissions.");
         }
     }
 }

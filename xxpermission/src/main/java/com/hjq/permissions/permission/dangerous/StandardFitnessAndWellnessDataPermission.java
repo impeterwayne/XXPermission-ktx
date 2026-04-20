@@ -6,17 +6,14 @@ import androidx.annotation.NonNull;
 import java.util.Objects;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/07/14
- *    desc   : Standard implementation class for fitness and wellness data permissions
+ * Standard implementation of fitness and wellness data permissions.
  */
 public final class StandardFitnessAndWellnessDataPermission extends HealthDataBasePermission {
 
     /** Permission name */
     @NonNull
     private final String mPermissionName;
-    /** Android version when this permission was introduced */
+    /** Android version where the permission was introduced */
     private final int mFromAndroidVersion;
 
     public static final Creator<StandardFitnessAndWellnessDataPermission> CREATOR = new Creator<StandardFitnessAndWellnessDataPermission>() {

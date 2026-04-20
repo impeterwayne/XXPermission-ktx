@@ -15,18 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Floating window (draw over other apps) permission class
+ * System alert window permission class.
  */
 public final class SystemAlertWindowPermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.SYSTEM_ALERT_WINDOW;
 
     public static final Parcelable.Creator<SystemAlertWindowPermission> CREATOR = new Parcelable.Creator<SystemAlertWindowPermission>() {
@@ -61,11 +54,8 @@ public final class SystemAlertWindowPermission extends SpecialPermission {
 
     @Override
     public int getFromAndroidVersion(@NonNull Context context) {
-        // Although the floating window permission was officially added in Android 6.0,
-        // some domestic manufacturers (OEMs) added it themselves in earlier versions,
-        // and the framework already has compatibility for it.
-        // To support lower Android versions, the introduced version here is set to API 17
-        // (the minimum supported version of this framework).
+        // Although system alert window permission was introduced in Android 6.0, some vendor systems added it before Android 6.0, and the framework already handles that compatibility
+        // So to support lower Android versions, this treats the introduction version of the system alert window permission as API 17, which is also the framework minSdkVersion requirement
         return PermissionVersion.ANDROID_4_2;
     }
 
@@ -79,9 +69,9 @@ public final class SystemAlertWindowPermission extends SpecialPermission {
             return true;
         }
 
-        // Tested on vivo X7 Plus (Android 5.1) and OPPO A53 (Android 5.1 ColorOS 2.1),
-        // results were inaccurate. Debugging showed it was not due to changes in OP_SYSTEM_ALERT_WINDOW,
-        // but likely because vivo and OPPO modified the entire overlay window mechanism.
+        // vivo x7 Plus(Android 5.1) and OPPO A53 (Android 5.1 ColorOS 2.1) check
+        // debug not vivo and oppo OP_SYSTEM_ALERT_WINDOW
+        // vivo and oppo system alert window , no
         return checkOpPermission(context, OP_SYSTEM_ALERT_WINDOW_FIELD_NAME, OP_SYSTEM_ALERT_WINDOW_DEFAULT_VALUE, true);
     }
 
@@ -92,16 +82,18 @@ public final class SystemAlertWindowPermission extends SpecialPermission {
         Intent intent;
 
         if (PermissionVersion.isAndroid6()) {
-            // If the system is HyperOS, do not jump to the MIUI permission page,
-            // because the user still needs to go into “Other permissions” to find the overlay option.
-            // It’s more straightforward to jump directly to the full overlay permission list.
-            // Related Github issue: https://github.com/getActivity/XXPermissions/issues/342
+            // If the current system is HyperOS, do not navigate to the MIUI permission settings page, becausealso " permission"entry findssystem alert window permission settingsoption
+            // this means also directlynavigate allapp system alert window permission settingslist,
+            // Related GitHub issue:https://github.com/getActivity/XXPermissions/issues/342
             if (PermissionVersion.isAndroid11() && !DeviceOs.isHyperOs() &&
-                    (DeviceOs.isMiui() && DeviceOs.isMiuiOptimization())) {
-                // Starting with Android 11, you can’t directly jump to the specific permission page,
-                // only to the list of apps with overlay permissions.
-                // MIUI is more user-friendly and doesn’t block the jump, but other OEMs may prevent it.
+                        (DeviceOs.isMiui() && DeviceOs.isMiuiOptimization())) {
+                // because Android 11 after it version directlynavigate permission settings page, navigate system alert window permissionapp list, , here
+                // MIUI , will navigate issue, vendor , navigate
                 intent = PermissionSettingPage.getXiaoMiApplicationPermissionPageIntent(context);
+                intentList.add(intent);
+            } else if (DeviceOs.isFlyme()) {
+                // Meizu phone directlynavigate permission settings page, this means need to app list finds app authorization
+                intent = PermissionSettingPage.getMeiZuApplicationPermissionPageIntent(context);
                 intentList.add(intent);
             }
 
@@ -109,60 +101,83 @@ public final class SystemAlertWindowPermission extends SpecialPermission {
             intent.setData(getPackageNameUri(context));
             intentList.add(intent);
 
-            // Adding a package name in Android 11 has no effect.
-            // Official doc: https://developer.android.google.cn/reference/android/provider/Settings#ACTION_MANAGE_OVERLAY_PERMISSION
+            // Android 11 package namenavigate no , documentation :
+            // https://developer.android.google.cn/reference/android/provider/Settings#ACTION_MANAGE_OVERLAY_PERMISSION
             intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
             intentList.add(intent);
 
         } else {
 
-            // Note: No need to check for HarmonyOS. On HarmonyOS 2.0 the API level is reported as 29 (Android 10),
-            // so it will follow the Android 10+ logic above, not this branch.
+            // Please note the following, here need tocheck HarmonyOS, because HarmonyOS 2.0 codecheck API 29(Android 10)will directly logic, will below
             if (DeviceOs.isEmui()) {
-                // EMUI history: http://www.360doc.com/content/19/1017/10/9113704_867381705.shtml
-                // Huawei EMUI versions overview: https://blog.csdn.net/weixin_39959369/article/details/117351161
+                // EMUI : http://www.360doc.com/content/19/1017/10/9113704_867381705.shtml
+                // android Huaweiversion , HuaweiEMUI : https://blog.csdn.net/weixin_39959369/article/details/117351161
 
                 Intent addViewMonitorActivityIntent = new Intent();
-                // EMUI 3.1 adaptation (e.g., Huawei Honor 7 Android 5.0, M2 Youth Android 5.1, Enjoy 5S Android 5.1)
+                // EMUI 3.1 (Huawei 7 Android 5.0, Huawei M2 Android 5.1, Huawei 5S Android 5.1)
                 addViewMonitorActivityIntent.setClassName("com.huawei.systemmanager", "com.huawei.systemmanager.addviewmonitor.AddViewMonitorActivity");
 
                 Intent notificationManagementActivityIntent = new Intent();
-                // EMUI 3.0 adaptation (e.g., Huawei Maimang 3S Android 4.4)
+                // EMUI 3.0 (Huawei 3S Android 4.4)
                 notificationManagementActivityIntent.setClassName("com.huawei.systemmanager", "com.huawei.notificationmanager.ui.NotificationManagmentActivity");
 
-                // Get manufacturer OS version
+                // Get the vendor version number
                 String osVersionName = DeviceOs.getOsVersionName();
 
                 if (osVersionName.startsWith("3.0")) {
-                    // EMUI 3.0, 3.0.1
+                    // 3.0, 3.0.1
                     intentList.add(notificationManagementActivityIntent);
                     intentList.add(addViewMonitorActivityIntent);
                 } else {
-                    // EMUI 3.1 and others
+                    // 3.1,
                     intentList.add(addViewMonitorActivityIntent);
                     intentList.add(notificationManagementActivityIntent);
                 }
 
-                // Huawei Mobile Manager main page
+                // Huawei phone manager home page
                 intentList.addAll(PermissionSettingPage.getHuaWeiMobileManagerAppIntent(context));
 
             } else if (DeviceOs.isMiui()) {
 
-                // If MIUI optimization is disabled, skip this logic.
-                // Xiaomi phones can also enable overlay permission from the app details page
-                // (it just requires one more step).
+                // MIUI , here logic
+                // Xiaomi phone throughapp details page system alert window permission( will )
                 if (DeviceOs.isMiuiOptimization()) {
                     intent = PermissionSettingPage.getXiaoMiApplicationPermissionPageIntent(context);
                     intentList.add(intent);
                 }
 
-                // Xiaomi Mobile Manager main page
+                // Xiaomi phone manager home page
                 intentList.addAll(PermissionSettingPage.getXiaoMiMobileManagerAppIntent(context));
 
+            }  else if (DeviceOs.isFlyme()) {
+
+                intent = PermissionSettingPage.getMeiZuApplicationPermissionPageIntent(context);
+                intentList.add(intent);
+
             } else if (DeviceOs.isColorOs()) {
-                // com.color.safecenter was the old OPPO security center package, later changed to com.oppo.safe in ColorOS 2.1.
-                // Tested devices: OPPO R7 Plus (Android 5.0, ColorOS 2.1), OPPO R7s (Android 4.4, ColorOS 2.1).
-                // Direct overlay activity intents caused SecurityException, so instead we jump to higher-level settings pages.
+                // com.color.safecenter earlier oppo security center package name, com.oppo.safe oppo after it security center package name
+                // ColorOs 2.1 , Android 4.4 also com.color.safecenter, Android 5.0 com.oppo.safe
+
+                // java.lang.SecurityException: Permission Denial: starting Intent
+                // { cmp=com.oppo.safe/.permission.floatwindow.FloatWindowListActivity (has extras) } from
+                // ProcessRecord{839a7c5 10595:com.hjq.permissions.demo/u0a3781} (pid=10595, uid=13781) not exported from uid 1000
+                // intent.setClassName("com.oppo.safe", "com.oppo.safe.permission.floatwindow.FloatWindowListActivity");
+
+                // java.lang.SecurityException: Permission Denial: starting Intent
+                // { cmp=com.color.safecenter/.permission.floatwindow.FloatWindowListActivity (has extras) } from
+                // ProcessRecord{42b660b0 31279:com.hjq.permissions.demo/u0a204} (pid=31279, uid=10204) not exported from uid 1000
+                // intent.setClassName("com.color.safecenter", "com.color.safecenter.permission.floatwindow.FloatWindowListActivity");
+
+                // java.lang.SecurityException: Permission Denial: starting Intent
+                // { cmp=com.color.safecenter/.permission.PermissionAppAllPermissionActivity (has extras) } from
+                // ProcessRecord{42c49dd8 1791:com.hjq.permissions.demo/u0a204} (pid=1791, uid=10204) not exported from uid 1000
+                // intent.setClassName("com.color.safecenter", "com.color.safecenter.permission.PermissionAppAllPermissionActivity");
+
+                // cannot directly system alert windowpage, page(permission page)also , so
+                // OPPO R7 Plus(Android 5.0, ColorOs 2.1), OPPO R7s(Android 4.4, ColorOs 2.1)
+                // com.oppo.safe.permission.PermissionTopActivity
+                // com.oppo.safe..permission.PermissionAppListActivity
+                // com.color.safecenter.permission.PermissionTopActivity
 
                 intent = new Intent();
                 intent.setClassName("com.oppo.safe", "com.oppo.safe.permission.PermissionTopActivity");
@@ -171,25 +186,32 @@ public final class SystemAlertWindowPermission extends SpecialPermission {
                 intentList.addAll(PermissionSettingPage.getOppoSafeCenterAppIntent(context));
 
             } else if (DeviceOs.isFuntouchOs()) {
-                // Direct overlay activity intents caused SecurityException on vivo devices.
-                // On vivo X7 Plus (Android 5.1) it jumped but displayed a blank page.
-                // So we fallback to opening the Vivo Mobile Manager main page.
+                // java.lang.SecurityException: Permission Denial: starting Intent
+                // { cmp=com.iqoo.secure/.ui.phoneoptimize.FloatWindowManager (has extras) } from
+                // ProcessRecord{2c3023cf 21847:com.hjq.permissions.demo/u0a4633} (pid=21847, uid=14633) not exported from uid 10055
+                // intent.setClassName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.FloatWindowManager");
+
+                // java.lang.SecurityException: Permission Denial: starting Intent
+                // { cmp=com.iqoo.secure/.safeguard.PurviewTabActivity (has extras) } from
+                // ProcessRecord{2c3023cf 21847:com.hjq.permissions.demo/u0a4633} (pid=21847, uid=14633) not exported from uid 10055
+                // intent.setClassName("com.iqoo.secure", "com.iqoo.secure.safeguard.PurviewTabActivity");
+
+                // vivo x7 Plus(Android 5.1) navigate , page
+                // intent.setClassName("com.iqoo.secure", "com.iqoo.secure.safeguard.SoftPermissionDetailActivity");
+
+                // Vivo phone manager home page
                 intentList.addAll(PermissionSettingPage.getVivoMobileManagerAppIntent(context));
 
             } else if (DeviceOs.isOneUi()) {
                 intent = PermissionSettingPage.getOneUiPermissionPageIntent(context);
                 intentList.add(intent);
-
             } else if (DeviceOs.isSmartisanOs() && !PermissionVersion.isAndroid5_1()) {
-                // On SmartisanOS 5.1+, overlay can be enabled directly from app details.
-                // On versions below 5.1 (e.g., Android 4.4), must open the Security Center instead.
+                // , Smartisan phone 5.1 above phone directlythroughdirectlynavigate appdetails system alert window permission, 4.4 below phone , need tonavigate security center
                 intentList.addAll(PermissionSettingPage.getSmartisanPermissionPageIntent());
                 intentList.addAll(PermissionSettingPage.getSmartisanSecurityCenterAppIntent(context));
             }
 
-            // Notes:
-            // - 360’s first phone (360 N4) launched with Android 6.0, so no need for a special overlay setting page.
-            // - On Meizu phones running 6.0, overlay can be enabled directly via app details page.
+            // 360 phone 360 N4, Android version 6.0 , so need tonavigate page system alert window permission
         }
 
         intent = getApplicationDetailsSettingIntent(context);
@@ -209,7 +231,7 @@ public final class SystemAlertWindowPermission extends SpecialPermission {
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Indicates that this permission must be statically registered in the AndroidManifest.xml file
+        // Indicates that this permission must be declared statically in AndroidManifest.xml.
         return true;
     }
 }

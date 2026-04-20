@@ -6,18 +6,15 @@ import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/20
- *    desc   : Implementation of {@link android.app.Fragment} for starting Activities
+ * {@link android.app.Fragment} activity launch implementation.
  */
 @SuppressWarnings("deprecation")
-public final class StartActivityDelegateByFragmentApp implements IStartActivityDelegate {
+public final class StartActivityDelegateByFragmentAndroid implements IStartActivityDelegate {
 
     @NonNull
     private final Fragment mFragment;
 
-    public StartActivityDelegateByFragmentApp(@NonNull Fragment fragment) {
+    public StartActivityDelegateByFragmentAndroid(@NonNull Fragment fragment) {
         mFragment = fragment;
     }
 

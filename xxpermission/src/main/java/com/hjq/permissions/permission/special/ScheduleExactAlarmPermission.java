@@ -20,18 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Alarm permission class
+ * Exact alarm permission class.
  */
 public final class ScheduleExactAlarmPermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.SCHEDULE_EXACT_ALARM;
 
     public static final Parcelable.Creator<ScheduleExactAlarmPermission> CREATOR = new Parcelable.Creator<ScheduleExactAlarmPermission>() {
@@ -72,7 +65,7 @@ public final class ScheduleExactAlarmPermission extends SpecialPermission {
             return true;
         }
         AlarmManager alarmManager = context.getSystemService(AlarmManager.class);
-        // Although this SystemService is never null, still apply defensive programming just in case
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (alarmManager == null) {
             return false;
         }
@@ -90,7 +83,7 @@ public final class ScheduleExactAlarmPermission extends SpecialPermission {
             intent.setData(getPackageNameUri(context));
             intentList.add(intent);
 
-            // If adding the package name data prevents jumping, remove the package name data
+            // If adding the package name data prevents navigation, remove the package name data.
             intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
             intentList.add(intent);
         }
@@ -112,17 +105,16 @@ public final class ScheduleExactAlarmPermission extends SpecialPermission {
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Do not use the parent class’s method to check whether the manifest permission is registered.
-        // This does not mean we skip checking — this permission is more complex and requires a custom check.
+        // checkmanifest permissionhas nodeclare, check, permission , need to check
         return false;
     }
 
     @Override
     protected void checkSelfByManifestFile(@NonNull Activity activity,
-                                           @NonNull List<IPermission> requestList,
-                                           @NonNull AndroidManifestInfo manifestInfo,
-                                           @NonNull List<PermissionManifestInfo> permissionInfoList,
-                                           @Nullable PermissionManifestInfo currentPermissionInfo) {
+                                            @NonNull List<IPermission> requestList,
+                                            @NonNull AndroidManifestInfo manifestInfo,
+                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
+                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
         String useExactAlarmPermissionName;
         if (PermissionVersion.isAndroid13()) {
@@ -131,15 +123,12 @@ public final class ScheduleExactAlarmPermission extends SpecialPermission {
             useExactAlarmPermissionName = "android.permission.USE_EXACT_ALARM";
         }
 
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_13 &&
-                findPermissionInfoByList(permissionInfoList, useExactAlarmPermissionName) != null) {
-            // If the project already targets Android 13 and the manifest includes USE_EXACT_ALARM permission,
-            // then SCHEDULE_EXACT_ALARM can be registered in the manifest like this:
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_13 &&
+            findPermissionInfoByList(permissionInfoList, useExactAlarmPermissionName) != null) {
+            // If the current the project targets Android 13 , declared in the manifest file USE_EXACT_ALARM permission, SCHEDULE_EXACT_ALARM permissionin the manifest file this meansdeclare
             // <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
-            // Reference docs: https://developer.android.google.cn/reference/android/Manifest.permission#USE_EXACT_ALARM
-            // ⚠️ Important: If your app is to be published on Google Play, you should be cautious about adding USE_EXACT_ALARM.
-            // Unless your app is in categories like calendar, alarm clock, or timer,
-            // it will be very difficult to pass Play Store review with USE_EXACT_ALARM included.
+            // relateddocumentation link: https://developer.android.google.cn/reference/android/Manifest.permission#USE_EXACT_ALARM
+            // If app GooglePlay, need to add USE_EXACT_ALARM permission, becausenotcalendar, , appadd USE_EXACT_ALARM permission through GooglePlay
             checkPermissionRegistrationStatus(permissionInfoList, getPermissionName(), PermissionVersion.ANDROID_12_L);
             return;
         }

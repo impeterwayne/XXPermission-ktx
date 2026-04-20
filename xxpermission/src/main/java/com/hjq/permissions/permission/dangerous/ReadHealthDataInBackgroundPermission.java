@@ -16,19 +16,11 @@ import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/07/14
- *    desc   : Permission class for reading health data in the background
+ * Background health data read permission class.
  */
 public final class ReadHealthDataInBackgroundPermission extends HealthDataBasePermission {
 
-    /** Current permission name.
-     *  Note: This constant field is for internal framework use only,
-     *  not provided for external references.
-     *  If you need to get the permission name string,
-     *  please obtain it directly through {@link PermissionNames}.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.READ_HEALTH_DATA_IN_BACKGROUND;
 
     public static final Creator<ReadHealthDataInBackgroundPermission> CREATOR = new Creator<ReadHealthDataInBackgroundPermission>() {
@@ -67,13 +59,10 @@ public final class ReadHealthDataInBackgroundPermission extends HealthDataBasePe
     @Override
     public List<IPermission> getOldPermissions(Context context) {
         if (!PermissionVersion.isAndroid14()) {
-            // Explanation: Why only return background sensor permission below Android 14?
-            // Because before Android 14, the Android sensor permission was essentially for reading heart rate sensors.
-            // Starting from Android 14, this was split into health data permissions such as "read heart rate".
-            // However, Android 14 did not introduce a corresponding background permission — it only appeared in Android 15.
-            // This creates a compatibility issue:
-            // On Android 14, the framework assumes that using HealthConnectManager to read heart rate data in the background
-            // does not require a permission. From Android 15 onwards, this background permission is required.
+            // here Android 14 below version returnbackground sensors permission, because Android 14 earlier,
+            // Android sensorspermission read sensors , Android 14 health datapermission read permission,
+            // Android 14 no background permission, Android 15 background permission, here compatibility issue,
+            // hereframework Android 14 HealthConnectManager backgroundread need topermission , Android 15 need to.
             return PermissionUtils.asArrayList(PermissionLists.getBodySensorsBackgroundPermission());
         }
         return null;
@@ -86,9 +75,7 @@ public final class ReadHealthDataInBackgroundPermission extends HealthDataBasePe
                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
-        // If the permission’s introduced version is higher than minSdkVersion,
-        // it means the permission might still be requested on older systems.
-        // In that case, the corresponding old permission must be registered in AndroidManifest.xml.
+        // If the version where this permission was introduced is lower than minSdkVersion, it may be requested on older systems, so the legacy permission must also be declared in AndroidManifest.xml.
         if (getFromAndroidVersion(activity) > getMinSdkVersion(activity, manifestInfo)) {
             checkPermissionRegistrationStatus(permissionInfoList, PermissionNames.BODY_SENSORS_BACKGROUND, PermissionVersion.ANDROID_14);
         }
@@ -113,15 +100,15 @@ public final class ReadHealthDataInBackgroundPermission extends HealthDataBasePe
         }
 
         if (readHealthDataHistoryPermissionIndex != -1 && readHealthDataHistoryPermissionIndex > thisPermissionIndex) {
-            // Please place READ_HEALTH_DATA_IN_BACKGROUND permission after READ_HEALTH_DATA_HISTORY
+            // Please place the READ_HEALTH_DATA_IN_BACKGROUND permission after the READ_HEALTH_DATA_HISTORY permission.
             throw new IllegalArgumentException("Please place the " + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.READ_HEALTH_DATA_HISTORY + "\" permission");
+                "\" permission after the \"" + PermissionNames.READ_HEALTH_DATA_HISTORY + "\" permission");
         }
 
         if (otherHealthDataPermissionIndex != -1 && otherHealthDataPermissionIndex > thisPermissionIndex) {
-            // Please place READ_HEALTH_DATA_IN_BACKGROUND permission after other health data permissions
+            // please READ_HEALTH_DATA_IN_BACKGROUND permission health datapermission after it
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + requestList.get(otherHealthDataPermissionIndex) + "\" permission");
+                "\" permission after the \"" + requestList.get(otherHealthDataPermissionIndex) + "\" permission");
         }
     }
 }

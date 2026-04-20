@@ -13,18 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Install applications permission class
+ * Install apps permission class.
  */
 public final class RequestInstallPackagesPermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.REQUEST_INSTALL_PACKAGES;
 
     public static final Parcelable.Creator<RequestInstallPackagesPermission> CREATOR = new Parcelable.Creator<RequestInstallPackagesPermission>() {
@@ -78,7 +71,7 @@ public final class RequestInstallPackagesPermission extends SpecialPermission {
             intent.setData(getPackageNameUri(context));
             intentList.add(intent);
 
-            // If adding the package name data prevents jumping, remove the package name data
+            // If adding the package name data prevents navigation, remove the package name data.
             intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
             intentList.add(intent);
         }
@@ -100,7 +93,7 @@ public final class RequestInstallPackagesPermission extends SpecialPermission {
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Indicates that this permission must be statically registered in the AndroidManifest.xml file
+        // Indicates that this permission must be declared statically in AndroidManifest.xml.
         return true;
     }
 }

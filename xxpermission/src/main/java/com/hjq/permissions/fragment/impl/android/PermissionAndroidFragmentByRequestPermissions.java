@@ -1,16 +1,13 @@
-package com.hjq.permissions.fragment.impl.app;
+package com.hjq.permissions.fragment.impl.android;
 
 import androidx.annotation.NonNull;
 import com.hjq.permissions.core.PermissionChannelImpl;
 import com.hjq.permissions.core.PermissionChannelImplByRequestPermissions;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/20
- *    desc   : Permission Fragment class ({@link android.app.Fragment} + {@link android.app.Activity#requestPermissions(String[], int)})
+ * Permission fragment class( {@link android.app.Fragment} + {@link android.app.Activity#requestPermissions(String[], int)} ).
  */
-public final class PermissionAppFragmentByRequestPermissions extends PermissionAppFragment {
+public final class PermissionAndroidFragmentByRequestPermissions extends PermissionAndroidFragment {
 
     @NonNull
     private final PermissionChannelImpl mPermissionChannelImpl = new PermissionChannelImplByRequestPermissions(this);

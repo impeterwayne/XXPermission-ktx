@@ -1,33 +1,38 @@
-package com.hjq.permissions.fragment.impl.app;
+package com.hjq.permissions.fragment.impl.androidx;
 
-import android.app.Activity;
-import android.app.Fragment;
-import android.app.FragmentManager;
 import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.hjq.permissions.fragment.IFragmentMethod;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 import com.hjq.permissions.core.OnPermissionFragmentCallback;
+import com.hjq.permissions.fragment.IFragmentMethod;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/20
- *    desc   : Permission Fragment class ({@link android.app.Fragment})
+ * Base permission fragment built on {@link androidx.fragment.app.Fragment}.
  */
-@SuppressWarnings("deprecation")
-public abstract class PermissionAppFragment extends Fragment implements IFragmentMethod<Activity, FragmentManager> {
+public abstract class PermissionAndroidXFragment extends Fragment implements IFragmentMethod<FragmentActivity, FragmentManager> {
 
+    /**
+     * Sets the permission callback.
+     */
     @Override
     public void setPermissionFragmentCallback(@Nullable OnPermissionFragmentCallback callback) {
         getPermissionChannelImpl().setPermissionFragmentCallback(callback);
     }
 
+    /**
+     * Sets whether this fragment was recreated by a non-system restart.
+     */
     @Override
     public void setNonSystemRestartMark(boolean nonSystemRestartMark) {
         getPermissionChannelImpl().setNonSystemRestartMark(nonSystemRestartMark);
     }
 
+    /**
+     * Attaches the fragment.
+     */
     @Override
     public void commitFragmentAttach(@Nullable FragmentManager fragmentManager) {
         if (fragmentManager == null) {
@@ -36,6 +41,9 @@ public abstract class PermissionAppFragment extends Fragment implements IFragmen
         fragmentManager.beginTransaction().add(this, this.toString()).commitAllowingStateLoss();
     }
 
+    /**
+     * Detaches the fragment.
+     */
     @Override
     public void commitFragmentDetach() {
         FragmentManager fragmentManager = getFragmentManager();

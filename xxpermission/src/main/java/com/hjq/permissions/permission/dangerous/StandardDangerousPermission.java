@@ -9,10 +9,7 @@ import com.hjq.permissions.permission.common.DangerousPermission;
 import java.util.Objects;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Standard implementation class for dangerous permissions
+ * Standard implementation of dangerous permissions.
  */
 public final class StandardDangerousPermission extends DangerousPermission {
 
@@ -32,10 +29,10 @@ public final class StandardDangerousPermission extends DangerousPermission {
     /** Permission name */
     @NonNull
     private final String mPermissionName;
-    /** Permission group */
+    /** permission group */
     @Nullable
     private final String mPermissionGroup;
-    /** Android version when this permission was introduced */
+    /** Android version where the permission was introduced */
     private final int mFromAndroidVersion;
 
     private StandardDangerousPermission(Parcel in) {

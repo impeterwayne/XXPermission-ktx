@@ -7,8 +7,8 @@ import android.os.Parcel;
 import androidx.annotation.NonNull;
 import com.hjq.device.compat.DeviceOs;
 import com.hjq.permissions.manager.AlreadyRequestPermissionsManager;
-import com.hjq.permissions.permission.PermissionPageType;
 import com.hjq.permissions.permission.PermissionChannel;
+import com.hjq.permissions.permission.PermissionPageType;
 import com.hjq.permissions.permission.base.BasePermission;
 import com.hjq.permissions.tools.PermissionSettingPage;
 import com.hjq.permissions.tools.PermissionVersion;
@@ -16,10 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Base class for dangerous permissions
+ * Base class for dangerous permissions.
  */
 public abstract class DangerousPermission extends BasePermission {
 
@@ -45,26 +42,25 @@ public abstract class DangerousPermission extends BasePermission {
 
     @Override
     public boolean isGrantedPermission(@NonNull Context context, boolean skipRequest) {
-        // Check whether the permission is running on an older system
-        // (permission’s introduced version > current system version)
-        if (getFromAndroidVersion(context) > PermissionVersion.getCurrentVersion()) {
+        // checkpermission not older system (permission version > current system version)
+        if (getFromAndroidVersion(context) > PermissionVersion.getSdkVersion()) {
             return isGrantedPermissionByLowVersion(context, skipRequest);
         }
         return isGrantedPermissionByStandardVersion(context, skipRequest);
     }
 
     /**
-     * Determine whether the permission is granted on a standard-version system
+     * On standard Android versions, checkpermission is granted
      */
     protected boolean isGrantedPermissionByStandardVersion(@NonNull Context context, boolean skipRequest) {
         if (!PermissionVersion.isAndroid6()) {
             return true;
         }
-        return checkSelfPermission(context, getRequestPermissionName(context));
+        return checkSelfPermission(context, getPermissionName());
     }
 
     /**
-     * Determine whether the permission is granted on a low-version system
+     * On lower Android versions, checkpermission is granted
      */
     protected boolean isGrantedPermissionByLowVersion(@NonNull Context context, boolean skipRequest) {
         return true;
@@ -72,55 +68,41 @@ public abstract class DangerousPermission extends BasePermission {
 
     @Override
     public boolean isDoNotAskAgainPermission(@NonNull Activity activity) {
-        // Check whether the permission is running on an older system
-        // (permission’s introduced version > current system version)
-        if (getFromAndroidVersion(activity) > PermissionVersion.getCurrentVersion()) {
+        // checkpermission not older system (permission version > current system version)
+        if (getFromAndroidVersion(activity) > PermissionVersion.getSdkVersion()) {
             return isDoNotAskAgainPermissionByLowVersion(activity);
         }
         return isDoNotAskAgainPermissionByStandardVersion(activity);
     }
 
     /**
-     * On a standard-version system, determine whether the user has checked
-     * “Don’t ask again” for this permission
+     * On standard Android versions, checkpermission was marked by the user as "Do not ask again"
      */
     protected boolean isDoNotAskAgainPermissionByStandardVersion(@NonNull Activity activity) {
         if (!PermissionVersion.isAndroid6()) {
             return false;
         }
-        // Preconditions to decide whether the user checked “Don’t ask again”:
-        // 1) The permission must have been requested at least once during this app run.
-        // 2) The permission is currently denied.
-        // With these two conditions we can infer whether “Don’t ask again” was checked.
-        // Why so complicated? Because Google’s shouldShowRequestPermissionRationale is tricky:
-        // even if the user did NOT check “Don’t ask again”, the method may still return false
-        // when you call it BEFORE you’ve ever requested that permission during the current run.
-        // In short, Google doesn’t want you to know whether “Don’t ask again” was checked
-        // unless you’ve actually requested the permission in this run.
-        //
-        // The framework applies optimizations for cases where both foreground and background
-        // permissions are requested together. If the user explicitly denies the foreground
-        // permission, the framework won’t proceed to request the related background permission
-        // (since it would inevitably fail). This can make shouldShowRequestPermissionRationale
-        // less reliable.
-        //
-        // The flaw remains: if the app hasn’t requested a permission in this run, using
-        // shouldShowRequestPermissionRationale to judge “Don’t ask again” is inaccurate.
-        // Only after requesting at least once in this run can it be used reliably.
-        //
-        // You might ask: why not persist shouldShowRequestPermissionRationale to disk so it’s
-        // “very good”? This has already been discussed here:
-        // https://github.com/getActivity/XXPermissions/issues/154
-        //
-        // This is currently the best solution we can think of. If you have a better approach,
-        // please file an issue—we’ll keep improving it.
+        // Check whether the user selected Do not ask againoption preconditions
+        // 1. the permission must have been requested during the current app session
+        // 2. the permission must be ungranted
+        // throughabove checkuser deniedwhether "Do not ask again" option, will ？
+        // because Google shouldShowRequestPermissionRationale , user no "Do not ask again" optioncase ,
+        // shouldShowRequestPermissionRationale return false, case state norequest permission ,
+        // Google user not "Do not ask again" option, staterequest permission , otherwiseno .
+        // framework issue , request foreground permission and background permission , user denied foreground permission ,
+        // background permissionframework nocontinue request(becauserequest failure), causes shouldShowRequestPermissionRationale check issue.
+        // this means has , app stateIfnorequest permission, directly shouldShowRequestPermissionRationale check has issue ,
+        // has app staterequest permission shouldShowRequestPermissionRationale Check whether the user selected "Do not ask again" option.
+        // will : not permanently store shouldShowRequestPermissionRationale stateto disk？would not that be even better than this approach？
+        // issue already , here , : https://github.com/getActivity/XXPermissions/issues/154,
+        // This is the best solution available so far, If also has , tell me through an issue, will issue.
         return AlreadyRequestPermissionsManager.isAlreadyRequestPermissions(this) &&
-                !checkSelfPermission(activity, getRequestPermissionName(activity)) &&
-                !shouldShowRequestPermissionRationale(activity, getRequestPermissionName(activity));
+            !checkSelfPermission(activity, getPermissionName()) &&
+            !shouldShowRequestPermissionRationale(activity, getPermissionName());
     }
 
     /**
-     * On a low-version system, determine whether “Don’t ask again” was checked
+     * On lower Android versions, checkpermission was marked by the user as "Do not ask again"
      */
     protected boolean isDoNotAskAgainPermissionByLowVersion(@NonNull Activity activity) {
         return false;
@@ -132,27 +114,26 @@ public abstract class DangerousPermission extends BasePermission {
         List<Intent> intentList = new ArrayList<>(5);
         Intent intent;
 
-        // If the current OEM system is HyperOS or MIUI and Xiaomi “system optimization” is enabled,
-        // prefer jumping to Xiaomi’s dedicated app-permission settings page to improve the user experience.
-        // Note: some users reported that MIUI Global cannot jump to Xiaomi’s dedicated permission page
-        // for dangerous permissions.
-        // GitHub: https://github.com/getActivity/XXPermissions/issues/398
+        // If the current vendorsystem HyperOS or MIUI , already Xiaomisystem
+        // preferentiallynavigate Xiaomi has apppermission settings page, this means userauthorization
+        // Please note the following, has MIUI cannot navigate Xiaomi has permission settings page settings permission
+        // Github : https://github.com/getActivity/XXPermissions/issues/398
         if (DeviceOs.isMiuiByChina() && DeviceOs.isMiuiOptimization()) {
             intent = PermissionSettingPage.getXiaoMiApplicationPermissionPageIntent(context);
             intentList.add(intent);
         } else if (DeviceOs.isHyperOsByChina() && DeviceOs.isHyperOsOptimization()) {
             String osVersionName = DeviceOs.getOsVersionName();
-            // Filter versions 2.0.0.0 ~ 2.0.5.0. Tests on Xiaomi Cloud Test show
-            // that jumping directly to Xiaomi’s dedicated app-permission page has issues
-            // in this range. It appears fixed in 2.0.6.0. HyperOS 1.0 does not have this issue.
-            // Likely cause: early HyperOS 2.0 builds had an incomplete permission page that
-            // showed no dangerous-permission options—only “Other permissions”, and inside there
-            // were just a few options like: Home screen shortcuts, SMS notifications, Lock screen display,
-            // Background pop-ups, and Floating windows.
+            // hereneed to 2.0.0.0 ~ 2.0.5.0 scope version, because Xiaomi , scope versiondirectlynavigate Xiaomi has apppermission settings pagehas issue
+            // 2.0.6.0 issue , HyperOS 1.0 version no issue, so issue 2.0.0.0 ~ 2.0.5.0 version
+            // becauseXiaomi HyperOS 2.0 , Xiaomi has permission settings pagealso , navigate no permission option, has " permission" option
+            // permission option also has permission: desktop shortcuts, notification SMS, lock-screen display, background page, system alert window
             if (!osVersionName.matches("^2\\.0\\.[0-5]\\.\\d+$")) {
                 intent = PermissionSettingPage.getXiaoMiApplicationPermissionPageIntent(context);
                 intentList.add(intent);
             }
+        } else if (DeviceOs.isFlyme()) {
+            intent = PermissionSettingPage.getMeiZuApplicationPermissionPageIntent(context);
+            intentList.add(intent);
         }
 
         intent = getApplicationDetailsSettingIntent(context);
@@ -172,8 +153,7 @@ public abstract class DangerousPermission extends BasePermission {
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Dangerous permissions must be registered in the manifest by default.
-        // This avoids forcing subclasses for special/custom permissions to override this method.
+        // permissiondefaultyou need to declare, this means the caller defines a custom special permission, also
         return true;
     }
 }

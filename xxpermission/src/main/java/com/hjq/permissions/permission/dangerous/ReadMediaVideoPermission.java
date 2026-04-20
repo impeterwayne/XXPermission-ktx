@@ -18,19 +18,11 @@ import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Permission class for reading video media
+ * Read video media permission class.
  */
 public final class ReadMediaVideoPermission extends DangerousPermission {
 
-    /** Current permission name.
-     *  Note: This constant field is for internal framework use only,
-     *  not provided for external references.
-     *  If you need to get the permission name string,
-     *  please obtain it directly through {@link PermissionNames}.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.READ_MEDIA_VIDEO;
 
     public static final Parcelable.Creator<ReadMediaVideoPermission> CREATOR = new Parcelable.Creator<ReadMediaVideoPermission>() {
@@ -73,19 +65,17 @@ public final class ReadMediaVideoPermission extends DangerousPermission {
     @NonNull
     @Override
     public List<IPermission> getOldPermissions(Context context) {
-        // On Android versions below 13, accessing media files required READ_EXTERNAL_STORAGE permission
+        // Android 13 below media need to read storage permission
         return PermissionUtils.asArrayList(PermissionLists.getReadExternalStoragePermission());
     }
 
     @Override
     protected boolean isGrantedPermissionByStandardVersion(@NonNull Context context, boolean skipRequest) {
         if (PermissionVersion.isAndroid14() && !skipRequest) {
-            // On Android 14, if the request is for image or video permissions, the status needs to be re-checked.
-            // Reason: When the user grants access to "selected photos/videos" only,
-            // the READ_MEDIA_VISUAL_USER_SELECTED permission is granted,
-            // but READ_MEDIA_IMAGES and READ_MEDIA_VIDEO are shown as denied.
-            // To avoid failing the permission callback, we return true here,
-            // signaling that the request should be considered successful.
+            // If Android 14 , permission or videospermission, need toagaincheckpermission state
+            // becauseuserauthorization or videos, READ_MEDIA_VISUAL_USER_SELECTED permission state granted
+            // READ_MEDIA_IMAGES and READ_MEDIA_VIDEO permission state denied
+            // permission callback failure, here return true, this means callerrequest success
             return PermissionLists.getReadMediaVisualUserSelectedPermission().isGrantedPermission(context, false);
         }
         return super.isGrantedPermissionByStandardVersion(context, skipRequest);
@@ -108,9 +98,7 @@ public final class ReadMediaVideoPermission extends DangerousPermission {
                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
-        // If the permission’s introduced version is higher than minSdkVersion,
-        // it means this permission may still be requested on older systems.
-        // In that case, you must register the old permission in AndroidManifest.xml.
+        // If the version where this permission was introduced is lower than minSdkVersion, it may be requested on older systems, so the legacy permission must also be declared in AndroidManifest.xml.
         if (getFromAndroidVersion(activity) > getMinSdkVersion(activity, manifestInfo)) {
             checkPermissionRegistrationStatus(permissionInfoList, PermissionNames.READ_EXTERNAL_STORAGE, PermissionVersion.ANDROID_12_L);
         }
@@ -119,13 +107,11 @@ public final class ReadMediaVideoPermission extends DangerousPermission {
     @Override
     protected void checkSelfByRequestPermissions(@NonNull Activity activity, @NonNull List<IPermission> requestList) {
         super.checkSelfByRequestPermissions(activity, requestList);
-        // Check if READ_EXTERNAL_STORAGE permission has been manually added.
-        // If yes, throw an exception. Do not add this permission yourself,
-        // the framework automatically adds and requests it on versions below Android 13.
+        // checkwhether has addread external storage permission, has directly , please add permission, frameworkwill Android 13 below version add request permission
         if (PermissionUtils.containsPermission(requestList, PermissionNames.READ_EXTERNAL_STORAGE)) {
             throw new IllegalArgumentException("You have added the \"" + getPermissionName() + "\" permission, "
-                    + "please do not add the \"" + PermissionNames.READ_EXTERNAL_STORAGE + "\" permission, "
-                    + "this conflicts with the framework's automatic compatibility policy.");
+                + "please do not add the \"" + PermissionNames.READ_EXTERNAL_STORAGE + "\" permission, "
+                + "this conflicts with the framework's automatic compatibility policy.");
         }
     }
 }

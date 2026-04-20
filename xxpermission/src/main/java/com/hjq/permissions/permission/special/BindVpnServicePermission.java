@@ -23,18 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : VPN permission class
+ * VPN permission class.
  */
 public final class BindVpnServicePermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.BIND_VPN_SERVICE;
 
     public static final Parcelable.Creator<BindVpnServicePermission> CREATOR = new Parcelable.Creator<BindVpnServicePermission>() {
@@ -67,8 +60,18 @@ public final class BindVpnServicePermission extends SpecialPermission {
     @NonNull
     @Override
     public PermissionPageType getPermissionPageType(@NonNull Context context) {
-        // On OPPO systems with Android 15 and above, the VPN permission is an opaque Activity page
-        if (DeviceOs.isColorOs() && PermissionVersion.isAndroid15()) {
+        // VPN permission ColorOS devices will opaque Activity page case, the test results are as follows:
+        // ColorOS 16.0.0(Beta)Android 15 OPPO Find X8: opaque Activity
+        // ColorOS 16.0.0(Beta)Android 15 13: opaque Activity
+        // ColorOS 15.0.2 Android 15 OPPO Find X8s+: transparent Activity
+        // ColorOS 15.0.1 Android 15 2 Pro: transparent Activity
+        // ColorOS 15.0.0 Android 15 OPPO Pad2: opaque Activity
+        // ColorOS 15.0.0 Android 15 12: opaque Activity
+        // ColorOS 14.1.0 Android 14 OPPO Find X7: transparent Activity
+        // ColorOS 14.0.1 Android 14 OPPO A3 Pro 5G: transparent Activity
+        // ColorOS 14.0.0 Android 14 Reno8 Pro: transparent Activity
+        if (DeviceOs.isColorOs() && (DeviceOs.getOsBigVersionCode() >= 16 ||
+                                     DeviceOs.getOsVersionName().startsWith("15.0.0"))) {
             return PermissionPageType.OPAQUE_ACTIVITY;
         }
         return VpnService.prepare(context) != null ? PermissionPageType.TRANSPARENT_ACTIVITY : PermissionPageType.OPAQUE_ACTIVITY;
@@ -95,12 +98,12 @@ public final class BindVpnServicePermission extends SpecialPermission {
 
     @Override
     protected void checkSelfByManifestFile(@NonNull Activity activity,
-                                           @NonNull List<IPermission> requestList,
-                                           @NonNull AndroidManifestInfo manifestInfo,
-                                           @NonNull List<PermissionManifestInfo> permissionInfoList,
-                                           @Nullable PermissionManifestInfo currentPermissionInfo) {
+                                            @NonNull List<IPermission> requestList,
+                                            @NonNull AndroidManifestInfo manifestInfo,
+                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
+                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
-        // Check whether any Service class is registered with the attribute android:permission="android.permission.BIND_VPN_SERVICE"
+        // check whether any Service class declares android:permission="android.permission.BIND_VPN_SERVICE" attribute
         List<ServiceManifestInfo> serviceInfoList = manifestInfo.serviceInfoList;
         for (int i = 0; i < serviceInfoList.size(); i++) {
 
@@ -116,7 +119,7 @@ public final class BindVpnServicePermission extends SpecialPermission {
             }
 
             String action = "android.net.VpnService";
-            // Whether the VPN service intent has been registered
+            // current whether declare VPN service Intent
             boolean registeredVpnServiceAction = false;
             List<IntentFilterManifestInfo> intentFilterInfoList = serviceInfo.intentFilterInfoList;
             if (intentFilterInfoList != null) {
@@ -128,23 +131,23 @@ public final class BindVpnServicePermission extends SpecialPermission {
                 }
             }
             if (registeredVpnServiceAction) {
-                // Requirements are met, break all loops and return to avoid hitting the exception-throwing code below
+                // The requirements are satisfied, so stop all loops and return to avoid reaching the exception code below
                 return;
             }
 
             String xmlCode = "\t\t<intent-filter>\n"
-                    + "\t\t    <action android:name=\"" + action + "\" />\n"
-                    + "\t\t</intent-filter>";
+                           + "\t\t    <action android:name=\"" + action + "\" />\n"
+                           + "\t\t</intent-filter>";
             throw new IllegalArgumentException("Please add an intent filter for \"" + serviceInfo.name +
-                    "\" in the AndroidManifest.xml file.\n" + xmlCode);
+                                               "\" in the AndroidManifest.xml file.\n" + xmlCode);
         }
 
         /*
-         No Service was found that registered the attribute android:permission="android.permission.BIND_VPN_SERVICE".
-         Please register this attribute to a subclass of VpnService in the AndroidManifest.xml file.
+         * No Service was found with the android:permission="android.permission.BIND_VPN_SERVICE" attribute.
+         * Register this attribute on the VpnService subclass in the AndroidManifest.xml file.
          */
         throw new IllegalArgumentException("No Service was found to have registered the android:permission=\"" + getPermissionName() +
-                "\" property, Please register this property to VpnService subclass by AndroidManifest.xml file, "
-                + "otherwise it will lead to can't apply for the permission");
+            "\" property, Please register this property to VpnService subclass by AndroidManifest.xml file, "
+            + "otherwise it will lead to can't apply for the permission");
     }
 }

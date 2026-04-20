@@ -6,17 +6,14 @@ import androidx.annotation.NonNull;
 import java.util.Objects;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/07/14
- *    desc   : Standard implementation class for health records permissions
+ * Standard implementation of health record permissions.
  */
 public final class StandardHealthRecordsPermission extends HealthDataBasePermission {
 
     /** Permission name */
     @NonNull
     private final String mPermissionName;
-    /** Android version when this permission was introduced */
+    /** Android version where the permission was introduced */
     private final int mFromAndroidVersion;
 
     public static final Creator<StandardHealthRecordsPermission> CREATOR = new Creator<StandardHealthRecordsPermission>() {

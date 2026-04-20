@@ -3,35 +3,25 @@ package com.hjq.permissions;
 import android.app.Activity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.hjq.permissions.fragment.factory.PermissionFragmentFactory;
 import com.hjq.permissions.core.PermissionRequestMainLogic;
+import com.hjq.permissions.fragment.factory.PermissionFragmentFactory;
 import com.hjq.permissions.permission.base.IPermission;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2020/12/26
- *    desc   : Permission request interceptor
- *
- * Acts as a customizable interception point in the permission request flow.
- * You may hook into the process to show dialogs, log events, or otherwise
- * bend the permission gods to your will before Android pops up its own dialogs.
+ * Intercepts permission requests before and after the framework runs them.
  */
 public interface OnPermissionInterceptor {
 
     /**
-     * Triggered when starting a permission request.
-     * <p>
-     * Developers can intercept here to show a dialog or explanation to the user
-     * before the actual system permission request is fired.
-     * (If the user has already granted the permissions, this will not be invoked.)
+     * Called before the framework starts requesting permissions.
+     * You can show your own dialog here.
+     * This method is not called when every requested permission is already granted.
      *
-     * @param activity              the current Activity
-     * @param requestList           list of requested permissions
-     * @param fragmentFactory       factory for creating permission fragments
-     * @param permissionDescription permission description handler
-     * @param callback              result callback (nullable)
+     * @param requestList the requested permissions
+     * @param fragmentFactory the fragment factory used to perform the request
+     * @param permissionDescription the active permission description handler
+     * @param callback the final result callback
      */
     default void onRequestPermissionStart(@NonNull Activity activity,
                                           @NonNull List<IPermission> requestList,
@@ -42,14 +32,12 @@ public interface OnPermissionInterceptor {
     }
 
     /**
-     * Called when the permission request flow has finished.
+     * Called after the permission request flow finishes.
      *
-     * @param activity     the current Activity
-     * @param skipRequest  true if the request flow was skipped (for example, all permissions already granted)
-     * @param requestList  list of requested permissions
-     * @param grantedList  list of granted permissions
-     * @param deniedList   list of denied permissions
-     * @param callback     result callback (nullable)
+     * @param grantedList the permissions that were granted
+     * @param deniedList the permissions that were denied
+     * @param skipRequest whether the framework skipped the request flow
+     * @param callback the final result callback
      */
     default void onRequestPermissionEnd(@NonNull Activity activity, boolean skipRequest,
                                         @NonNull List<IPermission> requestList,
@@ -63,15 +51,10 @@ public interface OnPermissionInterceptor {
     }
 
     /**
-     * Dispatches the actual permission request logic.
-     * <p>
-     * Think of this as releasing the hounds: the request engine runs from here.
+     * Dispatches the permission request through the main request logic.
      *
-     * @param activity              the current Activity
-     * @param requestList           list of requested permissions
-     * @param fragmentFactory       factory for creating permission fragments
-     * @param permissionDescription permission description handler
-     * @param callback              result callback (nullable)
+     * @param requestList the requested permissions
+     * @param callback the final result callback
      */
     default void dispatchPermissionRequest(@NonNull Activity activity,
                                            @NonNull List<IPermission> requestList,
@@ -79,6 +62,6 @@ public interface OnPermissionInterceptor {
                                            @NonNull OnPermissionDescription permissionDescription,
                                            @Nullable OnPermissionCallback callback) {
         new PermissionRequestMainLogic(activity, requestList, fragmentFactory, this, permissionDescription, callback)
-                .request();
+            .request();
     }
 }

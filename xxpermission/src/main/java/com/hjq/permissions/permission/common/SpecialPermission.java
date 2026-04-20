@@ -5,16 +5,13 @@ import android.content.Context;
 import android.os.Parcel;
 import androidx.annotation.NonNull;
 import com.hjq.device.compat.DeviceOs;
-import com.hjq.permissions.permission.PermissionPageType;
 import com.hjq.permissions.permission.PermissionChannel;
+import com.hjq.permissions.permission.PermissionPageType;
 import com.hjq.permissions.permission.base.BasePermission;
 import com.hjq.permissions.tools.PermissionVersion;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Base class for special permissions
+ * Base class for special permissions.
  */
 public abstract class SpecialPermission extends BasePermission {
 
@@ -29,7 +26,7 @@ public abstract class SpecialPermission extends BasePermission {
     @NonNull
     @Override
     public PermissionChannel getPermissionChannel(@NonNull Context context) {
-        return PermissionChannel.START_ACTIVITY_FOR_RESULT;
+        return PermissionChannel.START_ACTIVITY;
     }
 
     @NonNull
@@ -49,7 +46,7 @@ public abstract class SpecialPermission extends BasePermission {
             return 0;
         }
 
-        // Special permissions always require a certain waiting time
+        // Special permissions always require a short wait time
         int waitTime;
         if (PermissionVersion.isAndroid11()) {
             waitTime = 200;
@@ -57,9 +54,8 @@ public abstract class SpecialPermission extends BasePermission {
             waitTime = 300;
         }
 
-        if (DeviceOs.isEmui() || DeviceOs.isHarmonyOs()) {
-            // Need to increase waiting time, otherwise some Huawei models may fail
-            // to recognize granted permissions immediately after authorization
+        if (DeviceOs.isEmui() || DeviceOs.isHarmonyOs() || DeviceOs.isHarmonyOsNextAndroidCompatible()) {
+            // The wait time must be slightly longer, otherwise some Huawei devices may grant the permission before the result can be detected
             if (PermissionVersion.isAndroid8()) {
                 waitTime = 300;
             } else {
@@ -70,12 +66,11 @@ public abstract class SpecialPermission extends BasePermission {
     }
 
     /**
-     * Whether the current permission must be statically registered in the manifest file
+     * Whether the current permission must be declared statically in the manifest file
      */
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Special permissions by default do not need to be registered in the manifest.
-        // This avoids forcing subclasses that define custom special permissions to override this method.
+        // Special permissions do not need to be declared by default, this means the caller defines a custom special permission, also
         return false;
     }
 }

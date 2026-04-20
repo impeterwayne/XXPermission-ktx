@@ -13,52 +13,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/20
- *    desc   : Permission Fragment Factory
+ * Factory for creating permission request fragments.
  */
 public abstract class PermissionFragmentFactory<A extends Activity, M> {
 
     /*
-     * Explanation of why the abstract factory pattern is used here to create Fragments,
-     * instead of using the old approach where the App package's Fragment directly requested permissions.
+     * A fragment factory is used here instead of always requesting permissions from one
+     * fragment implementation.
      *
-     * Problem 1: If you directly use the App package’s Fragment and call fragment.requestPermissions,
-     *            on a very small number of devices it may crash. After multiple rounds of debugging,
-     *            the cause was found: the crash is due to the manufacturer modifying the Android source code.
-     *            It was verified that ActivityCompat.requestPermissions (which internally calls activity.requestPermissions)
-     *            does not have this problem. If even activity.requestPermissions has issues, then there’s nothing
-     *            I can do—the OEM developers/testers responsible for that change should probably be "sacrificed" by their company.
+     * First, a few vendor ROMs crash when requestPermissions is called from a framework
+     * fragment. In those cases, using the host activity or an AndroidX fragment is more
+     * reliable.
      *
-     *            The best solution:
-     *            - If XXPermissions.with is called with a FragmentActivity or Support library Fragment,
-     *              then use the Support library Fragment to request permissions.
-     *            - In other cases, use the App package Fragment.
-     *            This minimizes the risk of such crashes.
+     * Second, the callback should stay in the same lifecycle tree as the original caller.
+     * If the request starts from an AndroidX fragment, the request fragment should also live
+     * in that AndroidX fragment hierarchy. The same rule applies to framework fragments.
+     * This avoids callbacks reaching a fragment that is no longer attached.
      *
-     * Related GitHub issues:
+     * Related issues:
      * 1. https://github.com/getActivity/XXPermissions/issues/339
      * 2. https://github.com/getActivity/XXPermissions/issues/126
      * 3. https://github.com/getActivity/XXPermissions/issues/357
-     *
-     * Problem 2: If you directly use the App package’s Fragment to get permission callbacks,
-     *            and the request was started from a Support library Fragment:
-     *            - If the Support library Fragment is destroyed during the permission request,
-     *              the callback is still triggered to the outer layer.
-     *            - This happens because lifecycles of different Fragment classes are not synchronized.
-     *            - As a result, the callback could be delivered to a destroyed Fragment. If the outer code
-     *              doesn’t check the Fragment’s state before proceeding, this may cause a crash like:
-     *              java.lang.IllegalStateException: Fragment XxxFragment not attached to a context
-     *
-     *            Best solution: Create a Fragment that is attached to the same host as the caller,
-     *            so the lifecycle is properly bound.
-     *            1. If the host is a FragmentActivity → create a Support library Fragment and bind it to the activity.
-     *            2. If the host is an Activity → create an App package Fragment and bind it to the activity.
-     *            3. If the host is a Support library Fragment → create a Support library Fragment and bind it as a child Fragment.
-     *            4. If the host is an App package Fragment → create an App package Fragment and bind it as a child Fragment.
-     *
-     * Related GitHub issue: https://github.com/getActivity/XXPermissions/issues/365
+     * 4. https://github.com/getActivity/XXPermissions/issues/365
      */
 
     @NonNull
@@ -72,32 +48,24 @@ public abstract class PermissionFragmentFactory<A extends Activity, M> {
         mFragmentManager = fragmentManager;
     }
 
-    /**
-     * Get the Activity object
-     */
+    /** Returns the host activity. */
     @NonNull
     protected A getActivity() {
         return mActivity;
     }
 
-    /**
-     * Get the FragmentManager object
-     */
+    /** Returns the fragment manager used by this factory. */
     @NonNull
     protected M getFragmentManager() {
         return mFragmentManager;
     }
 
-    /**
-     * Create and commit the Fragment
-     */
+    /** Creates and commits the request fragment. */
     public abstract void createAndCommitFragment(@NonNull List<IPermission> permissions,
                                                  @NonNull PermissionChannel permissionChannel,
                                                  @Nullable OnPermissionFragmentCallback callback);
 
-    /**
-     * Generate arguments for the permission request
-     */
+    /** Creates the fragment arguments for a permission request. */
     @NonNull
     protected Bundle generatePermissionArguments(@NonNull List<IPermission> permissions, @IntRange(from = 1, to = 65535) int requestCode) {
         Bundle bundle = new Bundle();

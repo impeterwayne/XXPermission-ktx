@@ -20,22 +20,13 @@ import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Permission class for writing to external storage
+ * Write external storage permission class.
  */
 public final class WriteExternalStoragePermission extends DangerousPermission {
 
-    /** Current permission name.
-     *  Note: This constant field is for internal framework use only,
-     *  not provided for external references.
-     *  If you need to get the permission name string,
-     *  please obtain it directly through {@link PermissionNames}.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.WRITE_EXTERNAL_STORAGE;
-
-    /** Scoped storage Meta Data Key (for internal use only) */
+    /** storage Meta Data Key( ) */
     static final String META_DATA_KEY_SCOPED_STORAGE = ReadExternalStoragePermission.META_DATA_KEY_SCOPED_STORAGE;
 
     public static final Parcelable.Creator<WriteExternalStoragePermission> CREATOR = new Parcelable.Creator<WriteExternalStoragePermission>() {
@@ -77,25 +68,21 @@ public final class WriteExternalStoragePermission extends DangerousPermission {
 
     @Override
     protected boolean isGrantedPermissionByStandardVersion(@NonNull Context context, boolean skipRequest) {
-        if (PermissionVersion.isAndroid11() && PermissionVersion.getTargetVersion(context) >= PermissionVersion.ANDROID_11) {
-            // Explanation of why this always returns true:
-            // 1. When targetSdk >= Android 11 and WRITE_EXTERNAL_STORAGE is requested,
-            //    although a permission dialog may appear, it has no actual effect.
-            //    Docs:
-            //    https://developer.android.google.cn/reference/android/Manifest.permission#WRITE_EXTERNAL_STORAGE
-            //    https://developer.android.google.cn/about/versions/11/privacy/storage?hl=en#permissions-target-11
-            //    Developers may declare android:maxSdkVersion="29" in the manifest,
-            //    which would cause WRITE_EXTERNAL_STORAGE to fail. In that case we must return true.
-            // 2. When targetSdk >= Android 13 and WRITE_EXTERNAL_STORAGE is requested,
-            //    the system rejects it directly without showing a dialog.
-            //    To maintain consistent results across versions, the framework also returns true here.
-            // Based on these two reasons, when targetSdk >= 11 and running on Android 11+ devices,
-            // the check always returns true regardless of actual permission state.
+        if (PermissionVersion.isAndroid11() && PermissionVersion.getTargetSdkVersion(context) >= PermissionVersion.ANDROID_11) {
+            // here this means reason:
+            // 1. When targetSdk >= Android 11 version request WRITE_EXTERNAL_STORAGE, authorization dialog, no effect
+            // relateddocumentation link: https://developer.android.google.cn/reference/android/Manifest.permission#WRITE_EXTERNAL_STORAGE
+            // https://developer.android.google.cn/about/versions/11/privacy/storage?hl=zh-cn#permissions-target-11
+            // will manifest filedeclare android:maxSdkVersion="29" attribute, this meanscauses WRITE_EXTERNAL_STORAGE permission requestfailure, hereneed toreturn true caller
+            // 2. When targetSdk >= Android 13 version request WRITE_EXTERNAL_STORAGE, will systemdirectlydenied
+            // will systemauthorization dialog, framework Android version callbackresult , hereneed toreturn true caller
+            // reason, soWhenproject targetSdk >= Android 11 Android 11 above devices
+            // check WRITE_EXTERNAL_STORAGE permission, result whether granted, will directlyreturn true caller
             return true;
         }
-        // If targetSdk > Android 10 and running on Android 10 devices,
-        // but scoped storage is enabled, return true to simulate granted permission.
-        if (PermissionVersion.getTargetVersion(context) >= PermissionVersion.ANDROID_10 &&
+        // If the current project targetSdk > Android 10 Android 10 devices,
+        // storage case , directlyreturn true caller( granted permission)
+        if (PermissionVersion.getTargetSdkVersion(context) >= PermissionVersion.ANDROID_10 &&
                 PermissionVersion.isAndroid10() && !Environment.isExternalStorageLegacy()) {
             return true;
         }
@@ -104,12 +91,12 @@ public final class WriteExternalStoragePermission extends DangerousPermission {
 
     @Override
     protected boolean isDoNotAskAgainPermissionByStandardVersion(@NonNull Activity activity) {
-        if (PermissionVersion.isAndroid11() && PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_11) {
+        if (PermissionVersion.isAndroid11() && PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_11) {
             return false;
         }
-        // If targetSdk > Android 10 and running on Android 10 devices,
-        // but scoped storage is enabled, return false to simulate "not checked as 'Do not ask again'".
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_10 &&
+        // If the current project targetSdk > Android 10 Android 10 devices,
+        // storage case , directlyreturn false caller( no Do not ask again)
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_10 &&
                 PermissionVersion.isAndroid10() && !Environment.isExternalStorageLegacy()) {
             return false;
         }
@@ -118,49 +105,49 @@ public final class WriteExternalStoragePermission extends DangerousPermission {
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Do not use the parent’s default check for manifest registration.
-        // This permission is more complex and requires custom checks.
+        // checkmanifest permissionhas nodeclare, check, permission , need to check
         return false;
     }
 
     @Override
     protected void checkSelfByManifestFile(@NonNull Activity activity,
-                                           @NonNull List<IPermission> requestList,
-                                           @NonNull AndroidManifestInfo manifestInfo,
-                                           @NonNull List<PermissionManifestInfo> permissionInfoList,
-                                           @Nullable PermissionManifestInfo currentPermissionInfo) {
+                                            @NonNull List<IPermission> requestList,
+                                            @NonNull AndroidManifestInfo manifestInfo,
+                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
+                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
         ApplicationManifestInfo applicationInfo = manifestInfo.applicationInfo;
         if (applicationInfo == null) {
             return;
         }
 
-        // If targetSdk < Android 10, skip scoped storage checks and only verify static manifest registration
-        if (PermissionVersion.getTargetVersion(activity) < PermissionVersion.ANDROID_10) {
+        // If the current targetSdk version , also no storage version, directly after it check, Check whether the current permission is statically declared in the manifest file
+        if (PermissionVersion.getTargetSdkVersion(activity) < PermissionVersion.ANDROID_10) {
             checkPermissionRegistrationStatus(permissionInfoList, getPermissionName());
             return;
         }
 
-        // If targetSdk >= Android 11 and MANAGE_EXTERNAL_STORAGE is declared in manifest,
-        // then WRITE_EXTERNAL_STORAGE must have maxSdkVersion >= Android 10.
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_11 &&
-                findPermissionInfoByList(permissionInfoList, PermissionNames.MANAGE_EXTERNAL_STORAGE) != null) {
+        // check: current projectwhether Android 11, also in the manifest filewhether declare MANAGE_EXTERNAL_STORAGE permission
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_11 &&
+            findPermissionInfoByList(permissionInfoList, PermissionNames.MANAGE_EXTERNAL_STORAGE) != null) {
+            // Ifhas , maxSdkVersion must Android 10 above version
             checkPermissionRegistrationStatus(permissionInfoList, getPermissionName(), PermissionVersion.ANDROID_10);
         } else {
-            // Special handling for WRITE_EXTERNAL_STORAGE.
-            // If android:requestLegacyExternalStorage="true" is set, extend support by one version.
+            // check permissionhas nodeclare in the manifest file, WRITE_EXTERNAL_STORAGE permission , check
+            // Ifdeclared in the manifest file android:requestLegacyExternalStorage="true" attribute, Android version
+            // so requestLegacyExternalStorage attribute state , maxSdkVersion attribute version
             checkPermissionRegistrationStatus(
-                    permissionInfoList, getPermissionName(), applicationInfo.requestLegacyExternalStorage ?
-                            PermissionVersion.ANDROID_10 : PermissionVersion.ANDROID_9);
+                permissionInfoList, getPermissionName(), applicationInfo.requestLegacyExternalStorage ?
+                                                        PermissionVersion.ANDROID_10 : PermissionVersion.ANDROID_9);
         }
 
-        // Skip further checks if requesting Android 10 ACCESS_MEDIA_LOCATION permission.
+        // Ifrequest Android 10medialocationpermission, after it check
         if (PermissionUtils.containsPermission(requestList, PermissionNames.ACCESS_MEDIA_LOCATION)) {
             return;
         }
 
-        int targetSdkVersion = PermissionVersion.getTargetVersion(activity);
-        // Whether scoped storage is adapted (default = false)
+        int targetSdkVersion = PermissionVersion.getTargetSdkVersion(activity);
+        // whether storage(default no )
         boolean scopedStorage = false;
         if (applicationInfo.metaDataInfoList != null) {
             for (MetaDataManifestInfo metaDataManifestInfo : applicationInfo.metaDataInfoList) {
@@ -170,24 +157,26 @@ public final class WriteExternalStoragePermission extends DangerousPermission {
                 }
             }
         }
-        // If targeting Android 10 but not using requestLegacyExternalStorage nor ScopedStorage,
-        // external storage read/write will not work.
-        // Developers must either set requestLegacyExternalStorage="true"
-        // or explicitly declare <meta-data android:name="ScopedStorage" android:value="true" /> in manifest.
+        // If already Android 10 case
         if (targetSdkVersion >= PermissionVersion.ANDROID_10 && !applicationInfo.requestLegacyExternalStorage && !scopedStorage) {
+            // please manifest file Application node declare android:requestLegacyExternalStorage="true" attribute
+            // otherwise request permission, Android 10 device storage
+            // If projectalready storage, please declare in the manifest file meta-data attribute
+            // <meta-data android:name="ScopedStorage" android:value="true" /> check
             throw new IllegalStateException("Please register the android:requestLegacyExternalStorage=\"true\" " +
-                    "attribute in the AndroidManifest.xml file, otherwise it will cause incompatibility with the old version");
+                "attribute in the AndroidManifest.xml file, otherwise it will cause incompatibility with the old version");
         }
 
-        // If targeting Android 11 and not using ScopedStorage:
-        // Option 1: Adapt scoped storage and declare <meta-data android:name="ScopedStorage" android:value="true" /> in manifest.
-        // Option 2: Use MANAGE_EXTERNAL_STORAGE permission instead.
-        // One of the two approaches is required; otherwise external storage read/write won’t work on Android 11 devices.
-        // See docs: https://github.com/getActivity/XXPermissions/blob/master/HelpDoc
+        // If already Android 11 case
         if (targetSdkVersion >= PermissionVersion.ANDROID_11 && !scopedStorage) {
+            // 1. storage feature, declare in the manifest file meta-data attribute
+            // <meta-data android:name="ScopedStorage" android:value="true" />
+            // 2. If storage, need to Permission.MANAGE_EXTERNAL_STORAGE request permission
+            // need to , otherwise Android 11 device storage
+            // If , documentation: https://github.com/getActivity/XXPermissions/blob/master/HelpDoc
             throw new IllegalArgumentException("The storage permission application is abnormal. If you have adapted the scope storage, " +
-                    "please register the <meta-data android:name=\"ScopedStorage\" android:value=\"true\" /> attribute in the AndroidManifest.xml file. " +
-                    "If there is no adaptation scope storage, please use \"" + PermissionNames.MANAGE_EXTERNAL_STORAGE + "\" to apply for permission");
+                "please register the <meta-data android:name=\"ScopedStorage\" android:value=\"true\" /> attribute in the AndroidManifest.xml file. " +
+                "If there is no adaptation scope storage, please use \"" + PermissionNames.MANAGE_EXTERNAL_STORAGE + "\" to apply for permission");
         }
     }
 }

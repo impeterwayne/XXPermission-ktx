@@ -8,10 +8,7 @@ import androidx.annotation.NonNull;
 import com.hjq.permissions.tools.PermissionUtils;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/20
- *    desc   : Implementation of {@link android.content.Context} for starting Activities
+ * {@link android.content.Context} activity launch implementation.
  */
 public final class StartActivityDelegateByContext implements IStartActivityDelegate {
 
@@ -29,9 +26,7 @@ public final class StartActivityDelegateByContext implements IStartActivityDeleg
             activity.startActivity(intent);
             return;
         }
-        // On Android 9.0 and above, starting an Activity outside of an Activity context
-        // requires the FLAG_ACTIVITY_NEW_TASK flag.
-        // Reference: https://developer.android.google.cn/about/versions/pie/android-9.0-changes-all?hl=en#fant-required
+        // https://developer.android.google.cn/about/versions/pie/android-9.0-changes-all?hl=zh-cn#fant-required
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
     }
@@ -43,9 +38,7 @@ public final class StartActivityDelegateByContext implements IStartActivityDeleg
             activity.startActivityForResult(intent, requestCode);
             return;
         }
-        // On Android 9.0 and above, starting an Activity outside of an Activity context
-        // requires the FLAG_ACTIVITY_NEW_TASK flag.
-        // Reference: https://developer.android.google.cn/about/versions/pie/android-9.0-changes-all?hl=en#fant-required
+        // https://developer.android.google.cn/about/versions/pie/android-9.0-changes-all?hl=zh-cn#fant-required
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
     }

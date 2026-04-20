@@ -4,11 +4,10 @@ import android.Manifest;
 import android.accessibilityservice.AccessibilityService;
 import android.app.admin.DeviceAdminReceiver;
 import android.service.notification.NotificationListenerService;
-import android.util.LruCache;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.collection.LruCache;
 import com.hjq.permissions.permission.base.IPermission;
-import com.hjq.permissions.permission.dangerous.StandardDangerousPermission;
 import com.hjq.permissions.permission.dangerous.AccessBackgroundLocationPermission;
 import com.hjq.permissions.permission.dangerous.AccessMediaLocationPermission;
 import com.hjq.permissions.permission.dangerous.BluetoothAdvertisePermission;
@@ -17,7 +16,6 @@ import com.hjq.permissions.permission.dangerous.BluetoothScanPermission;
 import com.hjq.permissions.permission.dangerous.BodySensorsBackgroundPermission;
 import com.hjq.permissions.permission.dangerous.BodySensorsPermission;
 import com.hjq.permissions.permission.dangerous.GetInstalledAppsPermission;
-import com.hjq.permissions.permission.dangerous.StandardFitnessAndWellnessDataPermission;
 import com.hjq.permissions.permission.dangerous.NearbyWifiDevicesPermission;
 import com.hjq.permissions.permission.dangerous.PostNotificationsPermission;
 import com.hjq.permissions.permission.dangerous.ReadExternalStoragePermission;
@@ -29,6 +27,8 @@ import com.hjq.permissions.permission.dangerous.ReadMediaImagesPermission;
 import com.hjq.permissions.permission.dangerous.ReadMediaVideoPermission;
 import com.hjq.permissions.permission.dangerous.ReadMediaVisualUserSelectedPermission;
 import com.hjq.permissions.permission.dangerous.ReadPhoneNumbersPermission;
+import com.hjq.permissions.permission.dangerous.StandardDangerousPermission;
+import com.hjq.permissions.permission.dangerous.StandardFitnessAndWellnessDataPermission;
 import com.hjq.permissions.permission.dangerous.StandardHealthRecordsPermission;
 import com.hjq.permissions.permission.dangerous.WriteExternalStoragePermission;
 import com.hjq.permissions.permission.special.AccessNotificationPolicyPermission;
@@ -37,6 +37,7 @@ import com.hjq.permissions.permission.special.BindDeviceAdminPermission;
 import com.hjq.permissions.permission.special.BindNotificationListenerServicePermission;
 import com.hjq.permissions.permission.special.BindVpnServicePermission;
 import com.hjq.permissions.permission.special.ManageExternalStoragePermission;
+import com.hjq.permissions.permission.special.ManageMediaPermission;
 import com.hjq.permissions.permission.special.NotificationServicePermission;
 import com.hjq.permissions.permission.special.PackageUsageStatsPermission;
 import com.hjq.permissions.permission.special.PictureInPicturePermission;
@@ -49,14 +50,8 @@ import com.hjq.permissions.permission.special.WriteSettingsPermission;
 import com.hjq.permissions.tools.PermissionVersion;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : List of dangerous and special permissions, refer to {@link Manifest.permission}
- *    doc    : https://developer.android.google.cn/reference/android/Manifest.permission?hl=zh_cn
- *             https://developer.android.google.cn/reference/android/health/connect/HealthPermissions
- *             https://developer.android.google.cn/guide/topics/permissions/overview?hl=zh-cn#normal-dangerous
- *             http://www.taf.org.cn/upload/AssociationStandard/TTAF%20004-2017%20Android%E6%9D%83%E9%99%90%E8%B0%83%E7%94%A8%E5%BC%80%E5%8F%91%E8%80%85%E6%8C%87%E5%8D%97.pdf
+ * Factory methods for dangerous and special permissions.
+ * See {@link Manifest.permission} for the platform definitions.
  */
 public final class PermissionLists {
 
@@ -65,23 +60,21 @@ public final class PermissionLists {
         // default implementation ignored
     }
 
-    /** Number of permissions */
+    /** Permission count */
     private static final int PERMISSION_COUNT = 151;
 
     /**
-     * Permission object cache collection
-     *
-     * Here is an explanation of why IPermission objects are cached in a collection instead of being defined as static variables or constants. There are several reasons:
-     *
-     * 1. If you define them directly as constants or static variables, there is a problem: if the project enables obfuscation mode (minifyEnabled = true), unused constants or static variables will still be retained. I don't know why Android Studio does this, but it is a problem. The best solution I have found so far is to define them as static methods. If the static method is not called, the code will be removed during obfuscation.
-     * 2. If you define them directly as constants or static variables, there is another problem: once someone accesses this class for the first time, many objects will be initialized, regardless of whether the permission is used or not. This is not good for performance, even though the performance impact is minimal. But in the spirit of saving where possible, a static collection is used to store these permission objects, and they are only created when needed.
+     * Cache of reusable permission objects.
+     * Static methods are used instead of static instances so unused permissions can still be
+     * removed by shrinking, while frequently used parameterless permission objects are created
+     * lazily and reused.
      */
     private static final LruCache<String, IPermission> PERMISSION_CACHE_MAP = new LruCache<>(PERMISSION_COUNT);
 
     /**
-     * Get the cached permission object
+     * Returns the cached permission object.
      *
-     * @param permissionName            Permission name
+     * @param permissionName the permission name
      */
     @Nullable
     private static IPermission getCachePermission(@NonNull String permissionName) {
@@ -89,9 +82,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Add a permission object to the cache
+     * Adds a permission object to the cache.
      *
-     * @param permission                Permission object
+     * @param permission the permission object to cache
      */
     private static IPermission putCachePermission(@NonNull IPermission permission) {
         PERMISSION_CACHE_MAP.put(permission.getPermissionName(), permission);
@@ -99,16 +92,10 @@ public final class PermissionLists {
     }
 
     /**
-     * Read app list permission (dangerous permission, a permission created by the Telecommunication Terminal Industry Association and major Chinese phone manufacturers)
-     *
-     * Github issue: https://github.com/getActivity/XXPermissions/issues/175
-     * Implementation guide for mobile terminal application software list permission: http://www.taf.org.cn/StdDetail.aspx?uid=3A7D6656-43B8-4C46-8871-E379A3EA1D48&stdType=TAF
-     *
-     * Note:
-     *   1. You need to register the QUERY_ALL_PACKAGES permission or the <queries> node in the manifest file, otherwise you will not be able to get the installed app list on Android 11 even if the permission is granted.
-     *   2. This permission may be granted on some phones, not granted on others, and cannot be requested on some phones. It depends on whether the manufacturer supports it, and support does not mean it is granted by default.
-     *   3. If you register the QUERY_ALL_PACKAGES permission in the manifest for convenience and your app needs to be published on Google Play, please check Google Play's policy:
-     *      https://support.google.com/googleplay/android-developer/answer/9888170?hl=zh-Hans
+     * Returns the read installed apps permission.
+     * This vendor specific permission is used by some Chinese phone manufacturers.
+     * Apps may still need to declare {@code QUERY_ALL_PACKAGES} or a {@code <queries>} block,
+     * and Google Play policy may restrict its use.
      */
     @NonNull
     public static IPermission getGetInstalledAppsPermission() {
@@ -120,11 +107,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Full-screen notification permission (special permission, newly added in Android 14)
-     *
-     * Note: If your app needs to be published on Google Play, please add this permission with caution. Relevant document introductions are as follows:
-     * 1. Understand the requirements for foreground services and full-screen intents: https://support.google.com/googleplay/android-developer/answer/13392821?hl=zh-Hans
-     * 2. Google Play's requirements for full-screen intents in Android 14: https://orangeoma.zendesk.com/hc/en-us/articles/14126775576988-Google-Play-requirements-on-Full-screen-intent-for-Android-14
+     * Returns the full-screen intent permission.
+     * Introduced in Android 14. Review Google Play policy carefully before requesting it.
      */
     @NonNull
     public static IPermission getUseFullScreenIntentPermission() {
@@ -136,12 +120,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Alarm permission (special permission, newly added in Android 12)
-     *
-     * Note: This permission is different from other special permissions in that it is granted by default, and the user can also manually revoke the authorization.
-     * Official document introduction: https://developer.android.google.cn/about/versions/12/behavior-changes-12?hl=zh_cn#exact-alarm-permission
-     * Apps can only declare this permission if their core functionality supports the precise alarm requirement. Apps requesting this restricted permission need to undergo review; if the app does not meet the acceptable use case standards, it is not allowed to be published on Google Play.
-     * See Google Play's requirements for alarm permission: https://support.google.com/googleplay/android-developer/answer/9888170?hl=zh-Hans
+     * Returns the exact alarm permission.
+     * Introduced in Android 12. This permission is granted by default on some devices and can
+     * still be revoked by the user. Apps should only request it when exact alarms are essential.
      */
     @NonNull
     public static IPermission getScheduleExactAlarmPermission() {
@@ -153,13 +134,23 @@ public final class PermissionLists {
     }
 
     /**
-     * All files access permission (special permission, newly added in Android 11)
-     *
-     * In order to be compatible with Android 11 and below, you need to register
-     * {@link PermissionNames#READ_EXTERNAL_STORAGE} and {@link PermissionNames#WRITE_EXTERNAL_STORAGE} permissions in the manifest file
-     *
-     * If your app needs to be published on Google Play, you need to read Google's Play Store policy in detail:
-     * https://support.google.com/googleplay/android-developer/answer/9956427
+     * Returns the manage media permission.
+     * Introduced in Android 12. It does not grant direct read or write access. Instead, it lets
+     * trusted apps avoid repeated confirmation dialogs when modifying media files.
+     */
+    @NonNull
+    public static IPermission getManageMediaPermission() {
+        IPermission permission = getCachePermission(ManageMediaPermission.PERMISSION_NAME);
+        if (permission != null) {
+            return permission;
+        }
+        return putCachePermission(new ManageMediaPermission());
+    }
+
+    /**
+     * Returns the manage external storage permission.
+     * Introduced in Android 11. Apps that also support older Android versions should still declare
+     * {@link PermissionNames#READ_EXTERNAL_STORAGE} and {@link PermissionNames#WRITE_EXTERNAL_STORAGE}.
      */
     @NonNull
     public static IPermission getManageExternalStoragePermission() {
@@ -171,10 +162,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Install application permission (special permission, newly added in Android 8.0)
-     *
-     * Android 11 feature adjustment, installing applications from external sources requires restarting the app: https://cloud.tencent.com/developer/news/637591
-     * Practice has shown that Android 12 has fixed this problem, and the application will not restart after authorization or deauthorization.
+     * Returns the installation unknown apps permission.
+     * Introduced in Android 8. On some Android 11 devices, changing this permission may restart
+     * the app. That behavior was improved on Android 12.
      */
     @NonNull
     public static IPermission getRequestInstallPackagesPermission() {
@@ -186,9 +176,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Picture-in-picture permission (special permission, newly added in Android 8.0, note that this permission can be requested without being registered in the manifest file)
-     *
-     * Note: This permission is different from other special permissions in that it is granted by default, and the user can also manually revoke the authorization.
+     * Returns the picture-in-picture permission.
+     * Introduced in Android 8. This permission is often granted by default and can still be
+     * revoked manually.
      */
     @NonNull
     public static IPermission getPictureInPicturePermission() {
@@ -200,10 +190,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Floating window permission (special permission, newly added in Android 6.0, but some domestic manufacturers have compatible devices before Android 6.0)
-     *
-     * In Android 10 and previous versions, you can jump to the app's floating window settings page, while in Android 11 and later versions, you can only jump to the system settings floating window management list.
-     * Official explanation: https://developer.android.google.cn/reference/android/provider/Settings#ACTION_MANAGE_OVERLAY_PERMISSION
+     * Returns the system alert window permission.
+     * Introduced in Android 6, with some vendor specific support on older devices.
      */
     @NonNull
     public static IPermission getSystemAlertWindowPermission() {
@@ -214,9 +202,7 @@ public final class PermissionLists {
         return putCachePermission(new SystemAlertWindowPermission());
     }
 
-    /**
-     * Write system settings permission (special permission, newly added in Android 6.0)
-     */
+    /** Returns the write system settings permission. */
     @SuppressWarnings("unused")
     @NonNull
     public static IPermission getWriteSettingsPermission() {
@@ -227,9 +213,7 @@ public final class PermissionLists {
         return putCachePermission(new WriteSettingsPermission());
     }
 
-    /**
-     * Request to ignore battery optimization options permission (special permission, newly added in Android 6.0)
-     */
+    /** Returns the ignore battery optimizations permission. */
     @NonNull
     public static IPermission getRequestIgnoreBatteryOptimizationsPermission() {
         IPermission permission = getCachePermission(RequestIgnoreBatteryOptimizationsPermission.PERMISSION_NAME);
@@ -239,9 +223,7 @@ public final class PermissionLists {
         return putCachePermission(new RequestIgnoreBatteryOptimizationsPermission());
     }
 
-    /**
-     * Do Not Disturb permission, which can control the phone's ringing mode [Silent, Vibration] (special permission, newly added in Android 6.0)
-     */
+    /** Returns the Do Not Disturb access permission. */
     @NonNull
     public static IPermission getAccessNotificationPolicyPermission() {
         IPermission permission = getCachePermission(AccessNotificationPolicyPermission.PERMISSION_NAME);
@@ -251,9 +233,7 @@ public final class PermissionLists {
         return putCachePermission(new AccessNotificationPolicyPermission());
     }
 
-    /**
-     * View application usage permission, referred to as usage statistics permission (special permission, newly added in Android 5.0)
-     */
+    /** Returns the usage access permission. */
     @NonNull
     public static IPermission getPackageUsageStatsPermission() {
         IPermission permission = getCachePermission(PackageUsageStatsPermission.PERMISSION_NAME);
@@ -264,19 +244,17 @@ public final class PermissionLists {
     }
 
     /**
-     * Notification bar listening permission (special permission, newly added in Android 4.3, note that this permission can be requested without being registered in the manifest file)
+     * Returns the notification listener permission.
      *
-     * @param notificationListenerServiceClass             Notification listener's Service type
+     * @param notificationListenerServiceClass the notification listener service class
      */
     @NonNull
     public static IPermission getBindNotificationListenerServicePermission(@NonNull Class<? extends NotificationListenerService> notificationListenerServiceClass) {
-        // This object will not be included in the cached collection because it carries specific parameters. Only those without parameters can be put into the cached collection.
+        // This object is not stored in the cache collection, because it carries specific parameters, only parameterless objects can be cached
         return new BindNotificationListenerServicePermission(notificationListenerServiceClass);
     }
 
-    /**
-     * VPN permission (special permission, newly added in Android 4.0, note that this permission can be requested without being registered in the manifest file)
-     */
+    /** Returns the VPN permission. */
     @NonNull
     public static IPermission getBindVpnServicePermission() {
         IPermission permission = getCachePermission(BindVpnServicePermission.PERMISSION_NAME);
@@ -287,18 +265,18 @@ public final class PermissionLists {
     }
 
     /**
-     * Notification bar permission (special permission, only devices with Android 4.4 and above can determine the permission status, note that this permission can be requested without being registered in the manifest file)
+     * Returns the notification service permission for the given channel.
      *
-     * @param channelId         Notification channel id
+     * @param channelId the notification channel id
      */
     @NonNull
     public static IPermission getNotificationServicePermission(@NonNull String channelId) {
-        // This object will not be included in the cached collection because it carries specific parameters. Only those without parameters can be put into the cached collection.
+        // This object is not stored in the cache collection, because it carries specific parameters, only parameterless objects can be cached
         return new NotificationServicePermission(channelId);
     }
 
     /**
-     * Same as above
+     * Same as
      */
     @NonNull
     public static IPermission getNotificationServicePermission() {
@@ -310,9 +288,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Accessibility service permission (special permission, newly added in Android 4.1, note that this permission can be requested without being registered in the manifest file)
+     * Returns the accessibility service permission.
      *
-     * @param accessibilityServiceClass                                 Accessibility Service class
+     * @param accessibilityServiceClass the accessibility service class
      */
     @NonNull
     public static IPermission getBindAccessibilityServicePermission(@NonNull Class<? extends AccessibilityService> accessibilityServiceClass) {
@@ -320,10 +298,10 @@ public final class PermissionLists {
     }
 
     /**
-     * Device management permission (special permission, newly added in Android 2.2, note that this permission can be requested without being registered in the manifest file)
+     * Returns the device admin permission.
      *
-     * @param deviceAdminReceiverClass              Device manager's BroadcastReceiver class
-     * @param extraAddExplanation                   Additional explanation for requesting device manager permission
+     * @param deviceAdminReceiverClass the device admin receiver class
+     * @param extraAddExplanation extra explanation shown when requesting device admin access
      */
     @NonNull
     public static IPermission getBindDeviceAdminPermission(@NonNull Class<? extends DeviceAdminReceiver> deviceAdminReceiverClass, @Nullable String extraAddExplanation) {
@@ -331,17 +309,17 @@ public final class PermissionLists {
     }
 
     /**
-     * Same as above
+     * Same as
      */
     @NonNull
     public static IPermission getBindDeviceAdminPermission(@NonNull Class<? extends DeviceAdminReceiver> deviceAdminReceiverClass) {
         return new BindDeviceAdminPermission(deviceAdminReceiverClass, null);
     }
 
-    /* ------------------------------------ This is a beautiful dividing line ------------------------------------ */
+    /* ------------------------------------ Decorative separator ------------------------------------ */
 
     /**
-     * Permission to access part of the photos and videos (newly added in Android 14.0)
+     * Partial photo and video access permission, introduced in Android 14.0
      */
     @NonNull
     public static IPermission getReadMediaVisualUserSelectedPermission() {
@@ -353,9 +331,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to send notifications (newly added in Android 13.0)
-     *
-     * In order to be compatible, the framework will automatically add the {@link PermissionLists#getNotificationServicePermission()} permission for dynamic application on older Android devices, no manual addition is required.
+     * Post notifications permission, introduced in Android 13.0
+         * For backward compatibility, the framework automatically adds this on older Android devices {@link PermissionLists#getNotificationServicePermission()} permissionfor runtime requests, so you do not need to add it manually
      */
     @NonNull
     public static IPermission getPostNotificationsPermission() {
@@ -367,14 +344,12 @@ public final class PermissionLists {
     }
 
     /**
-     * WIFI permission (newly added in Android 13.0)
-     *
-     * You need to add the android:usesPermissionFlags="neverForLocation" attribute in the manifest file (indicating not to infer the device's geographical location)
-     * Otherwise, it will cause the inability to scan nearby WIFI devices without location permission. This has been tested. Below is the manifest permission registration example, please refer to the following for registration
-     * <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
-     *
-     * In order to be compatible with Android 13 and below, you need to register the {@link PermissionNames#ACCESS_FINE_LOCATION} permission in the manifest file.
-     * In addition, the framework will automatically add the {@link PermissionLists#getAccessFineLocationPermission()} permission for dynamic application on older Android devices, no manual addition is required.
+     * Wi-Fi permission, introduced in Android 13.0
+         * you need to add android:usesPermissionFlags="neverForLocation" attribute(which means not deriving the device location)
+     * otherwisecauses nolocation permission case Wi-Fi device, , below manifest permissiondeclare , please below declare
+     * <uses-permission android:name="android.permission.NEARBY_Wi-Fi_DEVICES" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
+         * compatibility Android 13 belowversion, you need to declare in the manifest file {@link PermissionNames#ACCESS_FINE_LOCATION} permission
+     * the framework automatically adds this on older Android devices {@link PermissionLists#getAccessFineLocationPermission()} permissionfor runtime requests, so you do not need to add it manually
      */
     @NonNull
     public static IPermission getNearbyWifiDevicesPermission() {
@@ -386,11 +361,10 @@ public final class PermissionLists {
     }
 
     /**
-     * Background sensor permission (newly added in Android 13.0)
-     *
-     * Note:
-     * 1. Once you apply for this permission, you need to select "Always allow" during authorization, and you cannot choose "Allow only while in use".
-     * 2. If your App only uses sensor functions in the foreground and does not have scenarios for use in the background, please do not apply for this permission (background sensor permission)
+     * Background sensors permission, introduced in Android 13.0
+         * Please note the following:
+     * 1. Once you request this permission, during authorization , you need to choose "Allow all the time", instead of "Allow only while using the app"
+     * 2. If App foreground state sensorsfeature, please request permission(background sensors permission)
      */
     @NonNull
     public static IPermission getBodySensorsBackgroundPermission() {
@@ -402,10 +376,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read pictures (newly added in Android 13.0)
-     *
-     * In order to be compatible with Android 13 and below, you need to register the {@link PermissionNames#READ_EXTERNAL_STORAGE} permission in the manifest file.
-     * In addition, the framework will automatically add the {@link PermissionLists#getReadExternalStoragePermission()} permission for dynamic application on older Android devices, no manual addition is required.
+     * Read images permission, introduced in Android 13.0
+         * compatibility Android 13 belowversion, you need to declare {@link PermissionNames#READ_EXTERNAL_STORAGE} permission
+     * the framework automatically adds this on older Android devices {@link PermissionLists#getReadExternalStoragePermission()} permissionfor runtime requests, so you do not need to add it manually
      */
     @NonNull
     public static IPermission getReadMediaImagesPermission() {
@@ -417,10 +390,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read videos (newly added in Android 13.0)
-     *
-     * In order to be compatible with Android 13 and below, you need to register the {@link PermissionNames#READ_EXTERNAL_STORAGE} permission in the manifest file.
-     * In addition, the framework will automatically add the {@link PermissionLists#getReadExternalStoragePermission()} permission for dynamic application on older Android devices, no manual addition is required.
+     * Read videos permission, introduced in Android 13.0
+         * compatibility Android 13 belowversion, you need to declare {@link PermissionNames#READ_EXTERNAL_STORAGE} permission
+     * the framework automatically adds this on older Android devices {@link PermissionLists#getReadExternalStoragePermission()} permissionfor runtime requests, so you do not need to add it manually
      */
     @NonNull
     public static IPermission getReadMediaVideoPermission() {
@@ -432,10 +404,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read audio (newly added in Android 13.0)
-     *
-     * In order to be compatible with Android 13 and below, you need to register the {@link PermissionNames#READ_EXTERNAL_STORAGE} permission in the manifest file.
-     * In addition, the framework will automatically add the {@link PermissionLists#getReadExternalStoragePermission()} permission for dynamic application on older Android devices, no manual addition is required.
+     * Read audio permission, introduced in Android 13.0
+         * compatibility Android 13 belowversion, you need to declare {@link PermissionNames#READ_EXTERNAL_STORAGE} permission
+     * the framework automatically adds this on older Android devices {@link PermissionLists#getReadExternalStoragePermission()} permissionfor runtime requests, so you do not need to add it manually
      */
     @NonNull
     public static IPermission getReadMediaAudioPermission() {
@@ -447,14 +418,12 @@ public final class PermissionLists {
     }
 
     /**
-     * Bluetooth scanning permission (newly added in Android 12.0)
-     *
-     * You need to add the android:usesPermissionFlags="neverForLocation" attribute in the manifest file (indicating not to infer the device's geographical location)
-     * Otherwise, it will cause the inability to scan nearby Bluetooth devices without location permission. This has been tested. Below is the manifest permission registration example, please refer to the following for registration
+     * Bluetooth scan permission, introduced in Android 12.0
+         * you need to add android:usesPermissionFlags="neverForLocation" attribute(which means not deriving the device location)
+     * otherwisecauses nolocation permission case device, , below manifest permissiondeclare , please below declare
      * <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
-     *
-     * In order to be compatible with Android 12 and below, you need to register the {@link Manifest.permission#BLUETOOTH_ADMIN} and {@link PermissionNames#ACCESS_FINE_LOCATION} permissions in the manifest file.
-     * In addition, the framework will automatically add the {@link PermissionLists#getAccessFineLocationPermission()} permission for dynamic application on older Android devices, no manual addition is required.
+         * compatibility Android 12 belowversion, you need to declare in the manifest file {@link Manifest.permission#BLUETOOTH_ADMIN} and {@link PermissionNames#ACCESS_FINE_LOCATION} permission
+     * the framework automatically adds this on older Android devices {@link PermissionLists#getAccessFineLocationPermission()} permissionfor runtime requests, so you do not need to add it manually
      */
     @NonNull
     public static IPermission getBluetoothScanPermission() {
@@ -466,9 +435,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Bluetooth connection permission (newly added in Android 12.0)
-     *
-     * In order to be compatible with Android 12 and below, you need to register the {@link Manifest.permission#BLUETOOTH} permission in the manifest file.
+     * Bluetooth connect permission, introduced in Android 12.0
+         * compatibility Android 12 belowversion, you need to declare {@link Manifest.permission#BLUETOOTH} permission
      */
     @NonNull
     public static IPermission getBluetoothConnectPermission() {
@@ -480,10 +448,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Bluetooth broadcast permission (newly added in Android 12.0)
-     *
-     * To broadcast the current device's Bluetooth for other devices to scan, this permission is required.
-     * In order to be compatible with Android 12 and below, you need to register the {@link Manifest.permission#BLUETOOTH_ADMIN} permission in the manifest file.
+     * Bluetooth advertise permission, introduced in Android 12.0
+         * current device broadcast, device need to permission
+     * compatibility Android 12 belowversion, you need to declare {@link Manifest.permission#BLUETOOTH_ADMIN} permission
      */
     @NonNull
     public static IPermission getBluetoothAdvertisePermission() {
@@ -495,11 +462,10 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to obtain location in the background (newly added in Android 10.0)
-     *
-     * Note:
-     * 1. Once you apply for this permission, you need to select "Always allow" during authorization, and you cannot choose "Allow only while in use".
-     * 2. If your App only uses location functions in the foreground and does not have scenarios for use in the background, please do not apply for this permission.
+     * Background location permission, introduced in Android 10.0
+         * Please note the following:
+     * 1. Once you request this permission, during authorization , you need to choose "Allow all the time", instead of "Allow only while using the app"
+     * 2. If App foreground state feature, no background , please request permission
      */
     @NonNull
     public static IPermission getAccessBackgroundLocationPermission() {
@@ -511,10 +477,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to obtain activity recognition (newly added in Android 10.0)
-     *
-     * Note: Android 10 and below do not require the sensor (BODY_SENSORS) permission to obtain step count.
-     * Github issue: https://github.com/getActivity/XXPermissions/issues/150
+     * Returns the permission object (introduced in Android 10.0).
+         * Please note the following: Android 10 below need tosensors(BODY_SENSORS)permission
+     * GitHub issue: https://github.com/getActivity/XXPermissions/issues/150
      */
     @NonNull
     public static IPermission getActivityRecognitionPermission() {
@@ -527,18 +492,15 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to access the location information of media (newly added in Android 10.0)
-     *
-     * Note: If this permission is successfully applied for but the geographical information of the photo cannot be read normally, you need to apply for storage permission. The specific situation can be divided into the following two cases:
-     *
-     * 1. In the case of adapting to scoped storage:
-     *     1) If the project targetSdkVersion <= 32, you need to apply for {@link PermissionLists#getReadExternalStoragePermission()}
-     *     2) If the project targetSdkVersion >= 33, you need to apply for {@link PermissionLists#getReadMediaImagesPermission()} or
-     *        {@link PermissionLists#getReadMediaVideoPermission()}, and you need to grant all, partial granting is not allowed.
-     *
-     * 2. In the case of not adapting to scoped storage:
-     *     1) If the project targetSdkVersion <= 29, you need to apply for {@link PermissionLists#getReadExternalStoragePermission()}
-     *     2) If the project targetSdkVersion >= 30, you need to apply for {@link PermissionLists#getManageExternalStoragePermission()}
+     * Access media location permission, introduced in Android 10.0
+         * Please note the following: If this permission request succeeds cannot readphotos , need to requeststoragepermission, below case:
+         * 1. If storage case :
+     * 1) Ifproject targetSdkVersion <= 32 need torequest {@link PermissionLists#getReadExternalStoragePermission()}
+     * 2) Ifproject targetSdkVersion >= 33 need torequest {@link PermissionLists#getReadMediaImagesPermission()} or
+     * {@link PermissionLists#getReadMediaVideoPermission()}, need togranted , cannot granted
+         * 2. Ifno storage case :
+     * 1) Ifproject targetSdkVersion <= 29 need torequest {@link PermissionLists#getReadExternalStoragePermission()}
+     * 2) Ifproject targetSdkVersion >= 30 need torequest {@link PermissionLists#getManageExternalStoragePermission()}
      */
     @NonNull
     public static IPermission getAccessMediaLocationPermission() {
@@ -550,9 +512,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to allow the calling application to continue the call in another application (newly added in Android 9.0)
-     *
-     * Note: This permission, when requested on some devices that cannot make calls (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
+     * Returns the accept handover permission.
+     * Introduced in Android 9. On some devices that do not support phone calls, requests may
+     * fail immediately, so callers should handle request failure normally.
      */
     @NonNull
     public static IPermission getAcceptHandoverPermission() {
@@ -565,12 +527,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read phone number (newly added in Android 8.0)
-     *
-     * Note: This permission, when requested on some devices that cannot make calls (e.g., Xiaomi Tablet 5), the system will directly callback success. However, this is not guaranteed. If you apply for it, please pay attention to handle the permission application failure.
-     *
-     * In order to be compatible with Android 8.0 and below, you need to register the {@link PermissionNames#READ_PHONE_STATE} permission in the manifest file.
-     * In addition, the framework will automatically add the {@link PermissionLists#getReadPhoneStatePermission()} permission for dynamic application on older Android devices, no manual addition is required.
+     * Returns the read phone numbers permission.
+     * Introduced in Android 8. On older Android versions, compatibility still depends on
+     * {@link PermissionNames#READ_PHONE_STATE}, which the framework adds automatically when needed.
      */
     @NonNull
     public static IPermission getReadPhoneNumbersPermission() {
@@ -582,9 +541,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to answer phone calls (newly added in Android 8.0, below Android 8.0 can use simulated headset button events to answer calls, this method does not require permission)
-     *
-     * Note: This permission, when requested on some devices that cannot make calls (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
+     * Returns the answer phone calls permission.
+     * Introduced in Android 8. On devices without phone support, requests may fail immediately,
+     * so callers should handle request failure normally.
      */
     @NonNull
     public static IPermission getAnswerPhoneCallsPermission() {
@@ -597,7 +556,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read external storage
+     * read external storage permission
      */
     @NonNull
     public static IPermission getReadExternalStoragePermission() {
@@ -609,7 +568,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write external storage (Note: This permission does not work on devices with targetSdk >= Android 11 and Android 11 and above, please adapt to the scoped storage feature instead of permission application)
+     * write external storage permission(note: permission targetSdk >= Android 11 Android 11 above devices effect, please storagefeature permission request)
      */
     @NonNull
     public static IPermission getWriteExternalStoragePermission() {
@@ -621,7 +580,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Camera permission
+     * camera permission
      */
     @NonNull
     public static IPermission getCameraPermission() {
@@ -634,7 +593,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Microphone permission
+     * microphone permission
      */
     @NonNull
     public static IPermission getRecordAudioPermission() {
@@ -647,7 +606,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to obtain precise location
+     * precise location permission
      */
     @NonNull
     public static IPermission getAccessFineLocationPermission() {
@@ -660,7 +619,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to obtain coarse location
+     * approximate location permission
      */
     @NonNull
     public static IPermission getAccessCoarseLocationPermission() {
@@ -673,7 +632,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read contacts
+     * read contacts permission
      */
     @NonNull
     public static IPermission getReadContactsPermission() {
@@ -686,7 +645,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to modify contacts
+     * write contacts permission
      */
     @NonNull
     public static IPermission getWriteContactsPermission() {
@@ -699,7 +658,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to access the account list
+     * get accounts permission
      */
     @NonNull
     public static IPermission getGetAccountsPermission() {
@@ -712,7 +671,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read calendar
+     * read calendar permission
      */
     @NonNull
     public static IPermission getReadCalendarPermission() {
@@ -725,7 +684,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to modify calendar
+     * write calendar permission
      */
     @NonNull
     public static IPermission getWriteCalendarPermission() {
@@ -738,18 +697,16 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read phone state. Note that:
-     *
-     * 1. This permission cannot be obtained on some phones because some systems prohibit applications from obtaining this permission.
-     *    So if you apply for this permission and there is no authorization box popping up, but the authorization failure callback is directly returned,
-     *    please do not panic, this is not a Bug, not a Bug, not a Bug, but a normal phenomenon.
-     *    Follow-up situation report: Some users reported that they could not obtain this permission on iQOO phones, and adding the following permission in the manifest file can solve the problem (this is just a record and does not mean that this method will definitely work).
-     *    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
-     *    Github issue: https://github.com/getActivity/XXPermissions/issues/98
-     *
-     * 2. This permission is directly passed when requested on some phones, but the system does not pop up the authorization dialog, and in fact, it is not authorized.
-     *    This is also not a Bug, but the system deliberately does this. If you ask me what to do, I can only say that the arm cannot twist the thigh.
-     *    Github issue: https://github.com/getActivity/XXPermissions/issues/369
+     * read phone state permission, Please note the following:
+         * 1. permission devices , because system app permission
+     * so request permissionlaterno authorization dialog, it means thatdirectlycallbackauthorization failed
+     * please , not Bug, not Bug, not Bug, it means that
+     * case : has iQOO devicesget permission, add to the manifest filebelow permission (here , has )
+     * <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+     * GitHub issue: https://github.com/getActivity/XXPermissions/issues/98
+         * 2. permission devicesrequest directlythrough , systemno authorization dialog, noauthorization
+     * not Bug, it means thatsystem , ,
+     * GitHub issue: https://github.com/getActivity/XXPermissions/issues/369
      */
     @NonNull
     public static IPermission getReadPhoneStatePermission() {
@@ -762,9 +719,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to make phone calls
-     *
-     * Note: This permission, when requested on some devices that cannot make calls (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
+     * call phone permission
+         * need tonote: permission phone calls device(For example: Xiaomi 5)request, systemwill directlycallbackfailure, has request, please permission requestfailure case
      */
     @NonNull
     public static IPermission getCallPhonePermission() {
@@ -777,9 +733,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read call logs
-     *
-     * Note: This permission, when requested on some devices that cannot make calls (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
+     * read call log permission
+         * need tonote: permission phone calls device(For example: Xiaomi 5)request, systemwill directlycallbackfailure, has request, please permission requestfailure case
      */
     @NonNull
     public static IPermission getReadCallLogPermission() {
@@ -788,15 +743,14 @@ public final class PermissionLists {
         if (permission != null) {
             return permission;
         }
-        // Note: In Android 9.0, the permissions related to call logs have been moved to a separate permission group. However, before Android 9.0, the read and write call log permissions belong to the phone permission group.
+        // note: Android 9.0 , call logrelated permissionalready permission group , Android 9.0 earlier, call logpermission phone permission group
         String permissionGroup = PermissionVersion.isAndroid9() ? PermissionGroups.CALL_LOG : PermissionGroups.PHONE;
         return putCachePermission(new StandardDangerousPermission(permissionName, permissionGroup, PermissionVersion.ANDROID_6));
     }
 
     /**
-     * Permission to modify call logs
-     *
-     * Note: This permission, when requested on some devices that cannot make calls (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
+     * write call log permission
+         * need tonote: permission phone calls device(For example: Xiaomi 5)request, systemwill directlycallbackfailure, has request, please permission requestfailure case
      */
     @NonNull
     public static IPermission getWriteCallLogPermission() {
@@ -805,13 +759,13 @@ public final class PermissionLists {
         if (permission != null) {
             return permission;
         }
-        // Note: In Android 9.0, the permissions related to call logs have been moved to a separate permission group. However, before Android 9.0, the read and write call log permissions belong to the phone permission group.
+        // note: Android 9.0 , call logrelated permissionalready permission group , Android 9.0 earlier, call logpermission phone permission group
         String permissionGroup = PermissionVersion.isAndroid9() ? PermissionGroups.CALL_LOG : PermissionGroups.PHONE;
         return putCachePermission(new StandardDangerousPermission(permissionName, permissionGroup, PermissionVersion.ANDROID_6));
     }
 
     /**
-     * Permission to add voicemail
+     * add voicemail permission
      */
     @NonNull
     public static IPermission getAddVoicemailPermission() {
@@ -824,7 +778,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to use SIP video
+     * use SIP permission
      */
     @NonNull
     public static IPermission getUseSipPermission() {
@@ -837,11 +791,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to process outgoing calls
-     *
-     * Note: This permission, when requested on some devices that cannot make calls (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
-     *
-     * @deprecated         Deprecated in Android 10, see: https://developer.android.google.cn/reference/android/Manifest.permission?hl=zh_cn#PROCESS_OUTGOING_CALLS
+     * process outgoing calls permission
+         * need tonote: permission phone calls device(For example: Xiaomi 5)request, systemwill directlycallbackfailure, has request, please permission requestfailure case
+         * @deprecated Android 10 already , please : https://developer.android.google.cn/reference/android/Manifest.permission?hl=zh_cn#PROCESS_OUTGOING_CALLS
      */
     @NonNull
     public static IPermission getProcessOutgoingCallsPermission() {
@@ -850,13 +802,13 @@ public final class PermissionLists {
         if (permission != null) {
             return permission;
         }
-        // Note: In Android 9.0, the permissions related to call logs have been moved to a separate permission group. However, before Android 9.0, the read and write call log permissions belong to the phone permission group.
+        // note: Android 9.0 , call logrelated permissionalready permission group , Android 9.0 earlier, call logpermission phone permission group
         String permissionGroup = PermissionVersion.isAndroid9() ? PermissionGroups.CALL_LOG : PermissionGroups.PHONE;
         return putCachePermission(new StandardDangerousPermission(permissionName, permissionGroup, PermissionVersion.ANDROID_6));
     }
 
     /**
-     * Permission to use sensors
+     * body sensors permission
      */
     @NonNull
     public static IPermission getBodySensorsPermission() {
@@ -868,9 +820,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to send SMS
-     *
-     * Note: This permission, when requested on some devices that cannot send SMS (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
+     * send SMS permission
+         * need tonote: permission SMS device(For example: Xiaomi 5)request, systemwill directlycallbackfailure, has request, please permission requestfailure case
      */
     @NonNull
     public static IPermission getSendSmsPermission() {
@@ -883,9 +834,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to receive SMS
-     *
-     * Note: This permission, when requested on some devices that cannot send SMS (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
+     * receive SMS permission
+         * need tonote: permission SMS device(For example: Xiaomi 5)request, systemwill directlycallbackfailure, has request, please permission requestfailure case
      */
     @NonNull
     public static IPermission getReceiveSmsPermission() {
@@ -898,9 +848,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read SMS
-     *
-     * Note: This permission, when requested on some devices that cannot send SMS (e.g., Xiaomi Tablet 5), the system will directly callback failure. If you apply for it, please pay attention to handle the permission application failure.
+     * read SMS permission
+         * need tonote: permission SMS device(For example: Xiaomi 5)request, systemwill directlycallbackfailure, has request, please permission requestfailure case
      */
     @NonNull
     public static IPermission getReadSmsPermission() {
@@ -913,9 +862,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to receive WAP push messages
-     *
-     * Note: This permission, when requested on some devices that cannot send SMS (e.g., Xiaomi Tablet 5), the system will directly callback success. However, this is not guaranteed. If you apply for it, please pay attention to handle the permission application failure.
+     * receive WAP push permission
+         * need tonote: permission SMS device(For example: Xiaomi 5)request, systemwill directlycallbacksuccess, , has request, also permission requestfailure case
      */
     @NonNull
     public static IPermission getReceiveWapPushPermission() {
@@ -928,9 +876,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to receive MMS
-     *
-     * Note: This permission, when requested on some devices that cannot send SMS (e.g., Xiaomi Tablet 5), the system will directly callback success. However, this is not guaranteed. If you apply for it, please pay attention to handle the permission application failure.
+     * receive MMS permission
+         * need tonote: permission SMS device(For example: Xiaomi 5)request, systemwill directlycallbacksuccess, , has request, also permission requestfailure case
      */
     @NonNull
     public static IPermission getReceiveMmsPermission() {
@@ -942,13 +889,12 @@ public final class PermissionLists {
         return putCachePermission(new StandardDangerousPermission(permissionName, PermissionGroups.SMS, PermissionVersion.ANDROID_6));
     }
 
-    /* ------------------------------------ This is a beautiful dividing line ------------------------------------ */
+    /* ------------------------------------ Decorative separator ------------------------------------ */
 
     /**
-     * Permission to read health data in the background (newly added in Android 15.0)
-     *
-     * In order to be compatible with Android 15 and below, you need to register the {@link PermissionNames#BODY_SENSORS_BACKGROUND} permission in the manifest file.
-     * In addition, the framework will automatically add the {@link PermissionLists#getReadHealthDataInBackgroundPermission()} ()} permission for dynamic application on older Android devices, no manual addition is required.
+     * Returns the permission object (introduced in Android 15.0).
+         * compatibility Android 15 belowversion, you need to declare {@link PermissionNames#BODY_SENSORS_BACKGROUND} permission
+     * the framework automatically adds this on older Android devices {@link PermissionLists#getReadHealthDataInBackgroundPermission()} ()} permissionfor runtime requests, so you do not need to add it manually
      */
     @NonNull
     public static IPermission getReadHealthDataInBackgroundPermission() {
@@ -961,9 +907,8 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read historical health data (newly added in Android 15.0)
-     *
-     * Health Connect can read data granted permission for up to 30 days. If you want the app to read records older than 30 days, you need to apply for this permission. Relevant document address:
+     * Returns the permission object (introduced in Android 15.0).
+         * Health Connect readgrantedpermission 30 .If appread 30 earlier , please need torequest permission, relateddocumentation link:
      * https://developer.android.google.cn/health-and-fitness/guides/health-connect/develop/read-data?hl=zh-cn#read-older-data
      */
     @NonNull
@@ -977,7 +922,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read the calories burned during exercise (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadActiveCaloriesBurnedPermission() {
@@ -990,7 +935,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write the calories burned during exercise (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteActiveCaloriesBurnedPermission() {
@@ -1003,7 +948,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read activity intensity data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadActivityIntensityPermission() {
@@ -1016,7 +961,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write activity intensity data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getWriteActivityIntensityPermission() {
@@ -1029,7 +974,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read basal body temperature data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadBasalBodyTemperaturePermission() {
@@ -1042,7 +987,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write basal body temperature data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteBasalBodyTemperaturePermission() {
@@ -1055,7 +1000,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read basal metabolic rate data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadBasalMetabolicRatePermission() {
@@ -1068,7 +1013,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write basal metabolic rate data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteBasalMetabolicRatePermission() {
@@ -1081,7 +1026,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read blood glucose data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadBloodGlucosePermission() {
@@ -1094,7 +1039,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write blood glucose data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteBloodGlucosePermission() {
@@ -1107,7 +1052,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read blood pressure data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadBloodPressurePermission() {
@@ -1120,7 +1065,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write blood pressure data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteBloodPressurePermission() {
@@ -1133,7 +1078,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read body fat data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadBodyFatPermission() {
@@ -1146,7 +1091,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write body fat data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteBodyFatPermission() {
@@ -1159,7 +1104,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read body temperature data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadBodyTemperaturePermission() {
@@ -1172,7 +1117,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write body temperature data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteBodyTemperaturePermission() {
@@ -1185,7 +1130,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read body water mass data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadBodyWaterMassPermission() {
@@ -1198,7 +1143,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write body water mass data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteBodyWaterMassPermission() {
@@ -1211,7 +1156,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read bone mass data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadBoneMassPermission() {
@@ -1224,7 +1169,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write bone mass data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteBoneMassPermission() {
@@ -1237,7 +1182,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read cervical mucus data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadCervicalMucusPermission() {
@@ -1250,7 +1195,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write cervical mucus data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteCervicalMucusPermission() {
@@ -1263,7 +1208,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read distance data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadDistancePermission() {
@@ -1276,7 +1221,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write distance data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteDistancePermission() {
@@ -1289,7 +1234,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read elevation gained data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadElevationGainedPermission() {
@@ -1302,7 +1247,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write elevation gained data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteElevationGainedPermission() {
@@ -1315,7 +1260,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read exercise data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadExercisePermission() {
@@ -1328,7 +1273,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write exercise data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteExercisePermission() {
@@ -1341,7 +1286,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read exercise routes data (newly added in Android 15.0)
+     * Returns the permission object (introduced in Android 15.0).
      */
     @NonNull
     public static IPermission getReadExerciseRoutesPermission() {
@@ -1354,7 +1299,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write exercise route data (newly added in Android 15.0)
+     * Returns the permission object (introduced in Android 15.0).
      */
     @NonNull
     public static IPermission getWriteExerciseRoutePermission() {
@@ -1367,7 +1312,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read floors climbed data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadFloorsClimbedPermission() {
@@ -1380,7 +1325,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write floors climbed data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteFloorsClimbedPermission() {
@@ -1393,10 +1338,9 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read heart rate data (newly added in Android 14.0)
-     *
-     * In order to be compatible with Android 14 and below, you need to register the {@link PermissionNames#BODY_SENSORS} permission in the manifest file.
-     * In addition, the framework will automatically add the {@link PermissionLists#getBodySensorsPermission()} permission for dynamic application on older Android devices, no manual addition is required.
+     * Returns the permission object (introduced in Android 14.0).
+         * compatibility Android 14 belowversion, you need to declare {@link PermissionNames#BODY_SENSORS} permission
+     * the framework automatically adds this on older Android devices {@link PermissionLists#getBodySensorsPermission()} permissionfor runtime requests, so you do not need to add it manually
      */
     @NonNull
     public static IPermission getReadHeartRatePermission() {
@@ -1408,7 +1352,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write heart rate data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteHeartRatePermission() {
@@ -1421,7 +1365,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read heart rate variability data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadHeartRateVariabilityPermission() {
@@ -1434,7 +1378,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write heart rate variability data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteHeartRateVariabilityPermission() {
@@ -1447,7 +1391,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read height data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadHeightPermission() {
@@ -1460,7 +1404,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write height data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteHeightPermission() {
@@ -1473,7 +1417,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read hydration data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadHydrationPermission() {
@@ -1486,7 +1430,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write hydration data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteHydrationPermission() {
@@ -1499,7 +1443,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read intermenstrual bleeding data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadIntermenstrualBleedingPermission() {
@@ -1512,7 +1456,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write intermenstrual bleeding data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteIntermenstrualBleedingPermission() {
@@ -1525,7 +1469,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read lean body mass data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadLeanBodyMassPermission() {
@@ -1538,7 +1482,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write lean body mass data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteLeanBodyMassPermission() {
@@ -1551,7 +1495,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read menstruation data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadMenstruationPermission() {
@@ -1564,7 +1508,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write menstruation data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteMenstruationPermission() {
@@ -1577,7 +1521,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read mindfulness data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMindfulnessPermission() {
@@ -1590,7 +1534,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write mindfulness data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getWriteMindfulnessPermission() {
@@ -1603,7 +1547,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read nutrition data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadNutritionPermission() {
@@ -1616,7 +1560,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write nutrition data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteNutritionPermission() {
@@ -1629,7 +1573,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read ovulation test data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadOvulationTestPermission() {
@@ -1642,7 +1586,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write ovulation test data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteOvulationTestPermission() {
@@ -1655,7 +1599,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read oxygen saturation data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadOxygenSaturationPermission() {
@@ -1668,7 +1612,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write oxygen saturation data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteOxygenSaturationPermission() {
@@ -1681,7 +1625,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read planned exercise data (newly added in Android 15.0)
+     * Returns the permission object (introduced in Android 15.0).
      */
     @NonNull
     public static IPermission getReadPlannedExercisePermission() {
@@ -1694,7 +1638,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write planned exercise data (newly added in Android 15.0)
+     * Returns the permission object (introduced in Android 15.0).
      */
     @NonNull
     public static IPermission getWritePlannedExercisePermission() {
@@ -1707,7 +1651,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read power data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadPowerPermission() {
@@ -1720,7 +1664,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write power data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWritePowerPermission() {
@@ -1733,7 +1677,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read respiratory rate data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadRespiratoryRatePermission() {
@@ -1746,7 +1690,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write respiratory rate data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteRespiratoryRatePermission() {
@@ -1759,7 +1703,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read resting heart rate data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadRestingHeartRatePermission() {
@@ -1772,7 +1716,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write resting heart rate data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteRestingHeartRatePermission() {
@@ -1785,7 +1729,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read sexual activity data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadSexualActivityPermission() {
@@ -1798,7 +1742,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write sexual activity data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteSexualActivityPermission() {
@@ -1811,7 +1755,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read skin temperature data (newly added in Android 15.0)
+     * Returns the permission object (introduced in Android 15.0).
      */
     @NonNull
     public static IPermission getReadSkinTemperaturePermission() {
@@ -1824,7 +1768,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write skin temperature data (newly added in Android 15.0)
+     * Returns the permission object (introduced in Android 15.0).
      */
     @NonNull
     public static IPermission getWriteSkinTemperaturePermission() {
@@ -1837,7 +1781,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read sleep data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadSleepPermission() {
@@ -1850,7 +1794,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write sleep data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteSleepPermission() {
@@ -1863,7 +1807,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read speed data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadSpeedPermission() {
@@ -1876,7 +1820,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write speed data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteSpeedPermission() {
@@ -1889,7 +1833,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read step count data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadStepsPermission() {
@@ -1902,7 +1846,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write step count data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteStepsPermission() {
@@ -1915,7 +1859,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read the total number of calories burned (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadTotalCaloriesBurnedPermission() {
@@ -1928,7 +1872,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write the total number of calories burned (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteTotalCaloriesBurnedPermission() {
@@ -1941,7 +1885,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read VO2 max data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadVo2MaxPermission() {
@@ -1954,7 +1898,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write VO2 max data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteVo2MaxPermission() {
@@ -1967,7 +1911,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read weight data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadWeightPermission() {
@@ -1980,7 +1924,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write weight data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteWeightPermission() {
@@ -1993,7 +1937,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read wheelchair pushes data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getReadWheelchairPushesPermission() {
@@ -2006,7 +1950,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write wheelchair pushes data (newly added in Android 14.0)
+     * Returns the permission object (introduced in Android 14.0).
      */
     @NonNull
     public static IPermission getWriteWheelchairPushesPermission() {
@@ -2018,10 +1962,10 @@ public final class PermissionLists {
         return putCachePermission(new StandardFitnessAndWellnessDataPermission(permissionName, PermissionVersion.ANDROID_14));
     }
 
-    /* ------------------------------------ This is a beautiful dividing line ------------------------------------ */
+    /* ------------------------------------ Decorative separator ------------------------------------ */
 
     /**
-     * Permission to read allergic reaction data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataAllergiesIntolerancesPermission() {
@@ -2034,7 +1978,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read condition data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataConditionsPermission() {
@@ -2047,7 +1991,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read laboratory results data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataLaboratoryResultsPermission() {
@@ -2060,7 +2004,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read medication data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataMedicationsPermission() {
@@ -2073,7 +2017,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read personal details data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataPersonalDetailsPermission() {
@@ -2086,7 +2030,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read practitioner details data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataPractitionerDetailsPermission() {
@@ -2099,7 +2043,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read pregnancy data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataPregnancyPermission() {
@@ -2112,7 +2056,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read procedures data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataProceduresPermission() {
@@ -2125,7 +2069,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read social history data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataSocialHistoryPermission() {
@@ -2138,7 +2082,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read vaccine data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataVaccinesPermission() {
@@ -2151,7 +2095,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read visit data, including location, appointment time, and medical organization name (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataVisitsPermission() {
@@ -2164,7 +2108,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to read vital signs data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getReadMedicalDataVitalSignsPermission() {
@@ -2177,7 +2121,7 @@ public final class PermissionLists {
     }
 
     /**
-     * Permission to write all health records data (newly added in Android 16.0)
+     * Returns the permission object (introduced in Android 16.0).
      */
     @NonNull
     public static IPermission getWriteMedicalDataPermission() {
@@ -2189,4 +2133,3 @@ public final class PermissionLists {
         return putCachePermission(new StandardHealthRecordsPermission(permissionName, PermissionVersion.ANDROID_16));
     }
 }
-

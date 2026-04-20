@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Parcel;
 import android.provider.Settings;
 import androidx.annotation.NonNull;
+import com.hjq.device.compat.DeviceBrand;
 import com.hjq.device.compat.DeviceOs;
 import com.hjq.permissions.permission.PermissionNames;
 import com.hjq.permissions.permission.common.SpecialPermission;
@@ -14,19 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : "Do Not Disturb" permission class
+ * Do Not Disturb permission class.
  */
 public final class AccessNotificationPolicyPermission extends SpecialPermission {
 
-    /** Current permission name.
-     *  Note: This constant field is for internal framework use only,
-     *  not provided for external references.
-     *  If you need to get the permission name string,
-     *  please obtain it directly through {@link PermissionNames}.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.ACCESS_NOTIFICATION_POLICY;
 
     public static final Creator<AccessNotificationPolicyPermission> CREATOR = new Creator<AccessNotificationPolicyPermission>() {
@@ -67,7 +60,7 @@ public final class AccessNotificationPolicyPermission extends SpecialPermission 
             return true;
         }
         NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-        // Even though this SystemService should never be null, defensive programming is applied here just in case.
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (notificationManager == null) {
             return false;
         }
@@ -80,24 +73,24 @@ public final class AccessNotificationPolicyPermission extends SpecialPermission 
         List<Intent> intentList = new ArrayList<>(6);
         Intent intent;
 
-        // Explanation: Why exclude HarmonyOS and MagicOS?
-        // Although the Intent exists and can be detected, and even launches,
-        // the system immediately denies the request on these OSes.
-        // This issue only occurs on HarmonyOS (tested on 2.0, 3.0, 4.2.0) and MagicOS,
-        // not on stock Android or other OEM systems.
-        // Note: HarmonyOS never had a 1.0 release — it launched directly at 2.0.
-        // -------------------- Divider Line ----------------------
-        // Related issues:
+        // here , HarmonyOS and MagicOS, because code can detect the Intent and even navigate to it, but access is denied immediately
+        // Testing on other vendor systems and stock Android did not show this issue, has HarmonyOS has issue
+        // because this Intent is hidden, it cannot be used, HarmonyOS 2.0, 3.0, 4.2.0 has issue
+        // Do not ask whether HarmonyOS 1.0 has this issue, HarmonyOS was released as version 2.0 from the start, 1.0 version 1.0 never shipped publicly
+        // ------------------------ Decorative separator ----------------------------
+        // related issue :
         // 1. https://github.com/getActivity/XXPermissions/issues/190
         // 2. https://github.com/getActivity/XXPermissions/issues/233
-        // Tested devices where adding the package name causes navigation failure:
-        // - Honor Magic V5, Android 15, MagicOS 9.0.1
-        // - Honor Magic4, Android 13, MagicOS 7.0
-        // - Honor 80 Pro, Android 12, MagicOS 7.0
-        // - Honor X20 SE, Android 11, MagicOS 4.1
-        // - Honor Play5, Android 10, MagicOS 4.0
-        // - Huawei nova 8, Android 10, EMUI 11.0
-        if (PermissionVersion.isAndroid10() && !(DeviceOs.isHarmonyOs() || DeviceOs.isMagicOs() || DeviceOs.isEmui())) {
+        // , The Honor devices listed below all fail to navigate correctly when a package name is added
+        // Magic V5 Android 15 MagicOS 9.0.1
+        // magic4 Android 13 MagicOS 7.0
+        // 80 Pro Android 12 MagicOS 7.0
+        // X20 SE Android 11 MagicOS 4.1
+        // Play5 Android 10 MagicOS 4.0
+        // Huawei nova 8 Android 10 EMUI 11.0
+        if (PermissionVersion.isAndroid10() && !(DeviceOs.isHarmonyOs() || DeviceOs.isHarmonyOsNextAndroidCompatible() ||
+                                                 DeviceOs.isMagicOs() || DeviceOs.isEmui() ||
+                                                 DeviceBrand.isHuaWei() || DeviceBrand.isHonor())) {
             // android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_DETAIL_SETTINGS
             intent = new Intent("android.settings.NOTIFICATION_POLICY_ACCESS_DETAIL_SETTINGS");
             intent.setData(getPackageNameUri(context));
@@ -126,7 +119,7 @@ public final class AccessNotificationPolicyPermission extends SpecialPermission 
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // This permission must be statically declared in AndroidManifest.xml
+        // Indicates that this permission must be declared statically in AndroidManifest.xml.
         return true;
     }
 }

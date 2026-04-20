@@ -1,47 +1,40 @@
 package com.hjq.permissions.permission;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/14
- *    desc   : Constant set of permission group names
+ * Constant set of permission group names.
  */
 public final class PermissionGroups {
 
     /**
-     * Suffix name for permission groups
+     * Suffix name of the permission group
      */
     public static final String SUFFIX = "_group";
 
     /**
-     * Storage permission group, includes the following permissions:
-     *
-     * {@link PermissionNames#READ_EXTERNAL_STORAGE}
+     * storage permission group, includess the following permissions
+         * {@link PermissionNames#READ_EXTERNAL_STORAGE}
      * {@link PermissionNames#WRITE_EXTERNAL_STORAGE}
      */
     public static final String STORAGE = "storage" + SUFFIX;
 
     /**
-     * Calendar permission group, includes the following permissions:
-     *
-     * {@link PermissionNames#READ_CALENDAR}
+     * calendar permission group, includess the following permissions
+         * {@link PermissionNames#READ_CALENDAR}
      * {@link PermissionNames#WRITE_CALENDAR}
      */
     public static final String CALENDAR = "calendar" + SUFFIX;
 
     /**
-     * Contacts permission group, includes the following permissions:
-     *
-     * {@link PermissionNames#READ_CONTACTS}
+     * contacts permission group, includess the following permissions
+         * {@link PermissionNames#READ_CONTACTS}
      * {@link PermissionNames#WRITE_CONTACTS}
      * {@link PermissionNames#GET_ACCOUNTS}
      */
     public static final String CONTACTS = "contacts" + SUFFIX;
 
     /**
-     * SMS permission group, includes the following permissions:
-     *
-     * {@link PermissionNames#SEND_SMS}
+     * SMS permission group, includess the following permissions
+         * {@link PermissionNames#SEND_SMS}
      * {@link PermissionNames#READ_SMS}
      * {@link PermissionNames#RECEIVE_SMS}
      * {@link PermissionNames#RECEIVE_WAP_PUSH}
@@ -50,45 +43,36 @@ public final class PermissionGroups {
     public static final String SMS = "sms" + SUFFIX;
 
     /**
-     * Location permission group, includes the following permissions:
-     *
-     * {@link PermissionNames#ACCESS_COARSE_LOCATION}
+     * location permission group, includess the following permissions
+         * {@link PermissionNames#ACCESS_COARSE_LOCATION}
      * {@link PermissionNames#ACCESS_FINE_LOCATION}
      * {@link PermissionNames#ACCESS_BACKGROUND_LOCATION}
-     *
-     * Note: In Android 12, Bluetooth-related permissions were moved to the Nearby Devices group,
-     * but in Android 11 and below, they belonged to the Location group.
+         * note: On Android 12, Bluetooth-related permissions belong to the nearby devices permission group, but before Android 12 they belonged to the location permission group
      * {@link PermissionNames#BLUETOOTH_SCAN}
      * {@link PermissionNames#BLUETOOTH_CONNECT}
      * {@link PermissionNames#BLUETOOTH_ADVERTISE}
-     *
-     * Note: In Android 13, Wi-Fi-related permissions were moved to the Nearby Devices group,
-     * but in Android 12 and below, they belonged to the Location group.
-     * {@link PermissionNames#NEARBY_WIFI_DEVICES}
+         * note: On Android 13, Wi-Fi-related permissions belong to the nearby devices permission group, but before Android 13 they belonged to the location permission group
+     * {@link PermissionNames#NEARBY_Wi-Fi_DEVICES}
      */
     public static final String LOCATION = "location" + SUFFIX;
 
     /**
-     * Sensors permission group, includes the following permissions:
-     *
-     * {@link PermissionNames#BODY_SENSORS}
+     * sensors permission group, includess the following permissions
+         * {@link PermissionNames#BODY_SENSORS}
      * {@link PermissionNames#BODY_SENSORS_BACKGROUND}
      */
     public static final String SENSORS = "sensors" + SUFFIX;
 
     /**
-     * Phone permission group, includes the following permissions:
-     *
-     * {@link PermissionNames#READ_PHONE_STATE}
+     * phone permission group, includess the following permissions
+         * {@link PermissionNames#READ_PHONE_STATE}
      * {@link PermissionNames#CALL_PHONE}
      * {@link PermissionNames#ADD_VOICEMAIL}
      * {@link PermissionNames#USE_SIP}
      * {@link PermissionNames#READ_PHONE_NUMBERS}
      * {@link PermissionNames#ANSWER_PHONE_CALLS}
      * {@link PermissionNames#ACCEPT_HANDOVER}
-     *
-     * Note: In Android 9.0, call log read/write permissions were moved to a separate group.
-     * In Android 8.1 and below, they belonged to the Phone group.
+         * note: On Android 9.0, read/write call log permissions belong to a separate permission group, but before Android 9.0 they belonged to the phone permission group
      * {@link PermissionNames#READ_CALL_LOG}
      * {@link PermissionNames#WRITE_CALL_LOG}
      * {@link PermissionNames#PROCESS_OUTGOING_CALLS}
@@ -96,49 +80,37 @@ public final class PermissionGroups {
     public static final String PHONE = "phone" + SUFFIX;
 
     /**
-     * Call log permission group (introduced in Android 9.0, previously part of Phone group),
-     * includes the following permissions:
-     *
-     * {@link PermissionNames#READ_CALL_LOG}
+     * call log permission group(On Android 9.0, read/write call log permissions belong to a separate permission group, but before Android 9.0 they belonged to the phone permission group), includess the following permissions
+         * {@link PermissionNames#READ_CALL_LOG}
      * {@link PermissionNames#WRITE_CALL_LOG}
      * {@link PermissionNames#PROCESS_OUTGOING_CALLS}
      */
     public static final String CALL_LOG = "call_log" + SUFFIX;
 
     /**
-     * Nearby devices permission group, includes the following permissions:
-     *
-     * In Android 12, Bluetooth-related permissions were moved here,
-     * but in Android 11 and below, they belonged to the Location group.
+     * nearby devices permission group, includess the following permissions
+         * On Android 12, Bluetooth-related permissions belong to the nearby devices permission group, but before Android 12 they belonged to the location permission group
      * {@link PermissionNames#BLUETOOTH_SCAN}
      * {@link PermissionNames#BLUETOOTH_CONNECT}
      * {@link PermissionNames#BLUETOOTH_ADVERTISE}
-     *
-     * Note: In Android 13, Wi-Fi-related permissions were moved here,
-     * but in Android 12 and below, they belonged to the Location group.
-     * {@link PermissionNames#NEARBY_WIFI_DEVICES}
+         * note: On Android 13, Wi-Fi-related permissions belong to the nearby devices permission group, but before Android 13 they belonged to the location permission group
+     * {@link PermissionNames#NEARBY_Wi-Fi_DEVICES}
      */
     public static final String NEARBY_DEVICES = "nearby_devices" + SUFFIX;
 
     /**
-     * Photos and videos permission group (Note: does not include audio permissions),
-     * includes the following permissions:
-     *
-     * {@link PermissionNames#READ_MEDIA_IMAGES}
+     * photos and videos permission group(note: does not includes audio permissions) , includess the following permissions
+         * {@link PermissionNames#READ_MEDIA_IMAGES}
      * {@link PermissionNames#READ_MEDIA_VIDEO}
      * {@link PermissionNames#READ_MEDIA_VISUAL_USER_SELECTED}
      */
     public static final String IMAGE_AND_VIDEO_MEDIA = "image_and_video_media" + SUFFIX;
 
     /**
-     * Health permission group, includes the following permissions:
-     *
-     * Background and history access:
-     * {@link PermissionNames#READ_HEALTH_DATA_IN_BACKGROUND}
+     * health permission group, includess the following permissions
+         * {@link PermissionNames#READ_HEALTH_DATA_IN_BACKGROUND}
      * {@link PermissionNames#READ_HEALTH_DATA_HISTORY}
-     *
-     * Metrics (calories, activity, body data, etc.):
-     * {@link PermissionNames#READ_ACTIVE_CALORIES_BURNED}
+         * {@link PermissionNames#READ_ACTIVE_CALORIES_BURNED}
      * {@link PermissionNames#WRITE_ACTIVE_CALORIES_BURNED}
      * {@link PermissionNames#READ_ACTIVITY_INTENSITY}
      * {@link PermissionNames#WRITE_ACTIVITY_INTENSITY}
@@ -218,9 +190,7 @@ public final class PermissionGroups {
      * {@link PermissionNames#WRITE_WEIGHT}
      * {@link PermissionNames#READ_WHEELCHAIR_PUSHES}
      * {@link PermissionNames#WRITE_WHEELCHAIR_PUSHES}
-     *
-     * Medical data permissions:
-     * {@link PermissionNames#READ_MEDICAL_DATA_ALLERGIES_INTOLERANCES}
+         * {@link PermissionNames#READ_MEDICAL_DATA_ALLERGIES_INTOLERANCES}
      * {@link PermissionNames#READ_MEDICAL_DATA_CONDITIONS}
      * {@link PermissionNames#READ_MEDICAL_DATA_LABORATORY_RESULTS}
      * {@link PermissionNames#READ_MEDICAL_DATA_MEDICATIONS}

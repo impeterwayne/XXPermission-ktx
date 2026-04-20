@@ -1,27 +1,24 @@
 package com.hjq.permissions.core;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/30
- *    desc   : Permission Fragment Callback
+ * Callback for fragment based permission requests.
  */
 public interface OnPermissionFragmentCallback {
 
     /**
-     * Callback when requesting permission
+     * Called when the permission request is about to start.
      */
     default void onRequestPermissionNow() {
         // default implementation ignored
     }
 
     /**
-     * Callback when permission request is finished
+     * Called when the permission request finishes.
      */
     void onRequestPermissionFinish();
 
     /**
-     * Callback when there is an anomaly in permission request
+     * Called when the request flow ends unexpectedly.
      */
     default void onRequestPermissionAnomaly() {
         // default implementation ignored

@@ -5,18 +5,15 @@ import com.hjq.permissions.permission.base.IPermission;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2018/06/15
- *    desc   : Permission request result callback interface
+ * Callback for permission request results.
  */
 public interface OnPermissionCallback {
 
     /**
-     * Permission request result callback
+     * Called when the permission request finishes.
      *
-     * @param grantedList   list of granted permissions
-     * @param deniedList    list of denied permissions
+     * @param grantedList the permissions that were granted
+     * @param deniedList the permissions that were denied
      */
     void onResult(@NonNull List<IPermission> grantedList, @NonNull List<IPermission> deniedList);
 }

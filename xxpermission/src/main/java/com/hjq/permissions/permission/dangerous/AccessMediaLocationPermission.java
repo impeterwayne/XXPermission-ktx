@@ -9,23 +9,16 @@ import com.hjq.permissions.permission.PermissionLists;
 import com.hjq.permissions.permission.PermissionNames;
 import com.hjq.permissions.permission.base.IPermission;
 import com.hjq.permissions.permission.common.DangerousPermission;
-import com.hjq.permissions.tools.PermissionVersion;
 import com.hjq.permissions.tools.PermissionUtils;
+import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Access media location permission class
+ * Access media location permission class.
  */
 public final class AccessMediaLocationPermission extends DangerousPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is for internal framework use only, not for external reference.
-     * If you need the permission name string, please use the {@link PermissionNames} class.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.ACCESS_MEDIA_LOCATION;
 
     public static final Parcelable.Creator<AccessMediaLocationPermission> CREATOR = new Parcelable.Creator<AccessMediaLocationPermission>() {
@@ -83,20 +76,19 @@ public final class AccessMediaLocationPermission extends DangerousPermission {
     }
 
     /**
-     * Check whether read media permission is granted
+     * Check whether the media read permission is granted
      */
     private boolean isGrantedReadMediaPermission(@NonNull Context context, boolean skipRequest) {
-        if (PermissionVersion.isAndroid13() && PermissionVersion.getTargetVersion(context) >= PermissionVersion.ANDROID_13) {
-            // Why not include Android 14 and READ_MEDIA_VISUAL_USER_SELECTED here?
-            // Because if you select partial photos/videos and then request ACCESS_MEDIA_LOCATION,
-            // the system will fail the request. You must choose "all photos and videos" to request this permission.
+        if (PermissionVersion.isAndroid13() && PermissionVersion.getTargetSdkVersion(context) >= PermissionVersion.ANDROID_13) {
+            // Why is there no additional Android 14 and READ_MEDIA_VISUAL_USER_SELECTED permission check？This is because if the user only grants partial photo and video access
+            // request Permission.ACCESS_MEDIA_LOCATION the system returns failure, the user must grant access to all photos and videos before this permission can be requested
             return PermissionLists.getReadMediaImagesPermission().isGrantedPermission(context, skipRequest) ||
-                    PermissionLists.getReadMediaVideoPermission().isGrantedPermission(context, skipRequest) ||
-                    PermissionLists.getManageExternalStoragePermission().isGrantedPermission(context, skipRequest);
+                PermissionLists.getReadMediaVideoPermission().isGrantedPermission(context, skipRequest) ||
+                PermissionLists.getManageExternalStoragePermission().isGrantedPermission(context, skipRequest);
         }
-        if (PermissionVersion.isAndroid11() && PermissionVersion.getTargetVersion(context) >= PermissionVersion.ANDROID_11) {
+        if (PermissionVersion.isAndroid11() && PermissionVersion.getTargetSdkVersion(context) >= PermissionVersion.ANDROID_11) {
             return PermissionLists.getReadExternalStoragePermission().isGrantedPermission(context, skipRequest) ||
-                    PermissionLists.getManageExternalStoragePermission().isGrantedPermission(context, skipRequest);
+                PermissionLists.getManageExternalStoragePermission().isGrantedPermission(context, skipRequest);
         }
         return PermissionLists.getReadExternalStoragePermission().isGrantedPermission(context, skipRequest);
     }
@@ -132,66 +124,66 @@ public final class AccessMediaLocationPermission extends DangerousPermission {
         }
 
         if (readMediaImagesPermissionIndex != -1 && readMediaImagesPermissionIndex > thisPermissionIndex) {
-            // Place ACCESS_MEDIA_LOCATION after READ_MEDIA_IMAGES
+            // Please place the ACCESS_MEDIA_LOCATION permission after the READ_MEDIA_IMAGES permission.
             throw new IllegalArgumentException("Please place the " + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.READ_MEDIA_IMAGES + "\" permission");
+                "\" permission after the \"" + PermissionNames.READ_MEDIA_IMAGES + "\" permission");
         }
 
         if (readMediaVideoPermissionIndex != -1 && readMediaVideoPermissionIndex > thisPermissionIndex) {
-            // Place ACCESS_MEDIA_LOCATION after READ_MEDIA_VIDEO
+            // Please place the ACCESS_MEDIA_LOCATION permission after the READ_MEDIA_VIDEO permission.
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.READ_MEDIA_VIDEO + "\" permission");
+                "\" permission after the \"" + PermissionNames.READ_MEDIA_VIDEO + "\" permission");
         }
 
         if (readMediaVisualUserSelectedPermissionIndex != -1 && readMediaVisualUserSelectedPermissionIndex > thisPermissionIndex) {
-            // Place ACCESS_MEDIA_LOCATION after READ_MEDIA_VISUAL_USER_SELECTED
+            // Please place the ACCESS_MEDIA_LOCATION permission after the READ_MEDIA_VISUAL_USER_SELECTED permission.
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.READ_MEDIA_VISUAL_USER_SELECTED + "\" permission");
+                "\" permission after the \"" + PermissionNames.READ_MEDIA_VISUAL_USER_SELECTED + "\" permission");
         }
 
         if (manageExternalStoragePermissionIndex != -1 && manageExternalStoragePermissionIndex > thisPermissionIndex) {
-            // Place ACCESS_MEDIA_LOCATION after MANAGE_EXTERNAL_STORAGE
+            // Please place the ACCESS_MEDIA_LOCATION permission after the MANAGE_EXTERNAL_STORAGE permission.
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.MANAGE_EXTERNAL_STORAGE + "\" permission");
+                "\" permission after the \"" + PermissionNames.MANAGE_EXTERNAL_STORAGE + "\" permission");
         }
 
         if (readExternalStoragePermissionIndex != -1 && readExternalStoragePermissionIndex > thisPermissionIndex) {
-            // Place ACCESS_MEDIA_LOCATION after READ_EXTERNAL_STORAGE
+            // Please place the ACCESS_MEDIA_LOCATION permission after the READ_EXTERNAL_STORAGE permission.
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.READ_EXTERNAL_STORAGE + "\" permission");
+                "\" permission after the \"" + PermissionNames.READ_EXTERNAL_STORAGE + "\" permission");
         }
 
         if (writeExternalStoragePermissionIndex != -1 && writeExternalStoragePermissionIndex > thisPermissionIndex) {
-            // Place ACCESS_MEDIA_LOCATION after WRITE_EXTERNAL_STORAGE
+            // Please place the ACCESS_MEDIA_LOCATION permission after the WRITE_EXTERNAL_STORAGE permission.
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.WRITE_EXTERNAL_STORAGE + "\" permission");
+                "\" permission after the \"" + PermissionNames.WRITE_EXTERNAL_STORAGE + "\" permission");
         }
 
-        // Check whether the project targets Android 13
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_13) {
-            // If request list already contains one of the required permissions, skip further checks
+        // Check whether the current project targets Android 13
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_13) {
+            // Check whether the requested permissions contain certain specific permissions
             if (PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_IMAGES) ||
-                    PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_VIDEO) ||
-                    PermissionUtils.containsPermission(requestList, PermissionNames.MANAGE_EXTERNAL_STORAGE)) {
+                PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_VIDEO) ||
+                PermissionUtils.containsPermission(requestList, PermissionNames.MANAGE_EXTERNAL_STORAGE)) {
+                // IfRequested permissions , contain those permissions ,
                 return;
             }
 
-            // Otherwise, you must manually add READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, or MANAGE_EXTERNAL_STORAGE
-            // to be able to request ACCESS_MEDIA_LOCATION
+            // If includes, the caller must manually add READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, MANAGE_EXTERNAL_STORAGE permission request ACCESS_MEDIA_LOCATION permission
             throw new IllegalArgumentException("You must add \"" + PermissionNames.READ_MEDIA_IMAGES + "\" or \"" +
-                    PermissionNames.READ_MEDIA_VIDEO + "\" or \"" + PermissionNames.MANAGE_EXTERNAL_STORAGE +
-                    "\" rights to apply for \"" + getPermissionName() + "\" rights");
+                PermissionNames.READ_MEDIA_VIDEO + "\" or \"" + PermissionNames.MANAGE_EXTERNAL_STORAGE +
+                "\" rights to apply for \"" + getPermissionName() + "\" rights");
         }
 
-        // If project has not yet targeted Android 13, check for these permissions instead
+        // If the current projectalso no Android 13, Check whether the requested permissions contain certain specific permissions
         if (PermissionUtils.containsPermission(requestList, PermissionNames.READ_EXTERNAL_STORAGE) ||
-                PermissionUtils.containsPermission(requestList, PermissionNames.MANAGE_EXTERNAL_STORAGE)) {
+            PermissionUtils.containsPermission(requestList, PermissionNames.MANAGE_EXTERNAL_STORAGE)) {
+            // IfRequested permissions , contain those permissions ,
             return;
         }
 
-        // Otherwise, you must add READ_EXTERNAL_STORAGE or MANAGE_EXTERNAL_STORAGE
-        // to be able to request ACCESS_MEDIA_LOCATION
+        // If includes, the caller must manually add READ_EXTERNAL_STORAGE or MANAGE_EXTERNAL_STORAGE request ACCESS_MEDIA_LOCATION permission
         throw new IllegalArgumentException("You must add \"" + PermissionNames.READ_EXTERNAL_STORAGE + "\" or \"" +
-                PermissionNames.MANAGE_EXTERNAL_STORAGE + "\" rights to apply for \"" + getPermissionName() + "\" rights");
+            PermissionNames.MANAGE_EXTERNAL_STORAGE + "\" rights to apply for \"" + getPermissionName() + "\" rights");
     }
 }

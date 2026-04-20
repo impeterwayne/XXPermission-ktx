@@ -1,9 +1,9 @@
 package com.hjq.permissions.core;
 
 import android.app.Activity;
+import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import android.text.TextUtils;
 import com.hjq.permissions.OnPermissionCallback;
 import com.hjq.permissions.OnPermissionDescription;
 import com.hjq.permissions.OnPermissionInterceptor;
@@ -20,10 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2018/06/15
- *    desc   : Main logic implementation class for permission requests
+ * Main implementation of the permission request flow.
  */
 public final class PermissionRequestMainLogic {
 
@@ -59,9 +56,7 @@ public final class PermissionRequestMainLogic {
         mCallBack = callback;
     }
 
-    /**
-     * Start permission request
-     */
+    /** Starts the permission request flow. */
     public void request() {
         if (mRequestList.isEmpty()) {
             return;
@@ -69,7 +64,7 @@ public final class PermissionRequestMainLogic {
 
         List<List<IPermission>> unauthorizedList = getUnauthorizedList(mActivity, mRequestList);
         if (unauthorizedList.isEmpty()) {
-            // Indicates that there are no permissions to request, directly handle the permission request result
+            // This means there are no permissions left to request, so handle the result directly.
             handlePermissionRequestResult();
             return;
         }
@@ -80,7 +75,7 @@ public final class PermissionRequestMainLogic {
             firstPermissions = iterator.next();
         }
         if (firstPermissions == null || firstPermissions.isEmpty()) {
-            // Indicates that there are no permissions to request, directly handle the permission request result
+            // This means there are no permissions left to request, so handle the result directly.
             handlePermissionRequestResult();
             return;
         }
@@ -89,10 +84,10 @@ public final class PermissionRequestMainLogic {
         final PermissionFragmentFactory<?, ?> fragmentFactory = mFragmentFactory;
         final OnPermissionDescription permissionDescription = mPermissionDescription;
 
-        // Lock the Activity screen orientation
+        // Lock the Activity orientation
         ActivityOrientationManager.lockActivityOrientation(activity);
 
-        // Initiate authorization
+        // start authorization
         requestPermissionsByFragment(activity, firstPermissions, fragmentFactory, permissionDescription, new Runnable() {
 
             @Override
@@ -102,54 +97,66 @@ public final class PermissionRequestMainLogic {
                     nextPermissions = iterator.next();
 
                     if (nextPermissions == null || nextPermissions.isEmpty()) {
-                        // The obtained permission list does not meet the requirements, continue to get the next one. Although it has been filtered before, theoretically it should not reach here, but for code robustness, this check is still added.
+                        // This permission list is not valid, so continue scanning. It should not happen after earlier filtering, but the extra check keeps the code safer.
                         continue;
                     }
 
-                    // Here is an explanation of why we need to check again whether the permission is granted, even though it was checked before. Isn't this redundant? Mainly to adapt to several extreme scenarios:
-                    // 1. The user initiates a request for camera permission and floating window permission. When the system pops up the camera permission dialog, the user does not grant it, but instead goes to the system settings, finds the floating window permission option for the current app, and grants it. Then returns to the app, where the system is still waiting for the camera permission. After granting the camera permission, the next permission to be requested is the floating window permission. However, since the user has already granted it, if we do not check again, the framework will still jump to the floating window settings page.
-                    // 2. In a test on an Android 12 emulator, requesting foreground location permission (including coarse and fine location) and background location permission, if the user selects "Approximate location" (the system defaults to "Precise location"), the foreground location permission is not considered granted because fine location is not granted. If the user selects "Precise location", both are granted. If the next permission is background location, and the user selects "Always allow" but does not select "Use precise location", then returns to the app and requests permission again, the system will prompt to change from "Approximate location" to "Precise location". After changing, the foreground location is granted, and the next is background location. If we do not check again, the framework will request again, possibly triggering a dialog, but the permission is already granted, so the system will not show any dialog but will report success.
-                    // Summary: The issue arises because there is no delay between the first permission requests, so we can trust the permissions are still not granted. But for the second batch, the situation is more complex because we cannot know what the user did during the first request.
+                    // Here is why the code checks grant state again even after checking earlier. It looks redundant, but it handles several edge cases:
+                    // 1. the user startscamera permission and system alert window permission request, while the system is showingcamera permissionauthorization dialog, the user does not grant it, and instead does something unusual,
+                    // directlygoes into system settings, finds the current app details page and itssystem alert window permissionoption, then directly grants thesystem alert window permission, and finally returns to the app,
+                    // the system is still waiting for the user to answer theusergrantedcamera permission, after after the user grants the camera permission, the next permission requested by the framework becomes the system alert window permission,
+                    // but the user had already granted thesystem alert window permission, If the framework does not check again here whether the permission is granted, a problem occurs, the framework still navigates to thesystem alert windowsettings page.
+                    // 2. During one accidental test, I found that on an Android 12 emulatorrequestforeground location permission (includesapproximate location and precise location) and background location permissionthere is an issue,
+                    // The issue is that when the user grants the location permission, intentionally selects "Approximate location"(the system defaults to "Precise location"), this means the foreground location permission request does not count as successful,
+                    // This is because selecting "Approximate location" causesthe precise location permission not being granted, while the opposite does not, If the user selects "Precise location", both the precise and approximate location permissions being granted,
+                    // At this point, the next permission is the background location permission, the framework guides the user to the permission settings page to grantlocation permission, , the user finds the location permission option, and enters it,
+                    // At this point, the user selects the "Allow all the time" option, but intentionally does not enable "Use precise location", then returns to the app, the user returns to the app and starts the permission request again,
+                    // at this point the system shows a dialog asking the user to upgrade from "Approximate location" to "Precise location", and the user chooses to switch to "Precise location", the foreground location permission request is finally complete,
+                    // At that point, the next permission is the background location permission, but as noted earlier, the user had already selected"Allow all the time"option, If the framework does not check again here whether the permission is granted, a problem occurs,
+                    // the framework still starts a new permission request, If the background location permission permission description, asks with a dialog whether to start the permission request, a strange result appears,
+                    // The app asks the user with a dialog whether to start the permission request, the user chooses "Yes", but the background location permission had already been granted, so the system shows no authorization dialog and directly reports success to the user.
+                    // In summary: this issue happens because there is no delay during the first requested permission batch, so the user has no chance to change anything else, so it is still reasonable to trust that the permission remains ungranted,
+                    // but by the second requested permission batch the situation becomes much more complicated, because you can never predict what the user may have done while the first permission list was being requested, during that time.
                     if (PermissionApi.isGrantedPermissions(activity, nextPermissions)) {
-                        // Set the next permission list to null, indicating it will not be requested
+                        // Clear the next permission batch so it will not be requested
                         nextPermissions = null;
-                        // The above permission list does not meet the requirements, continue to get the next one
+                        // The permission batch does not meet request requirements, so keep scanning
                         continue;
                     }
 
-                    // If the code reaches here, it means the next permission list is valid. Use break to exit the loop and proceed to the next step (permission request)
+                    // If execution reaches here, the next permission batch is valid. Break the loop and continue with the next request step.
                     break;
                 }
 
                 if (nextPermissions == null || nextPermissions.isEmpty()) {
-                    // Indicates that all requests are complete, delay sending the permission handling result
+                    // This means all requests are complete, so post the result handling with a delay
                     postDelayedHandlerRequestPermissionsResult();
                     return;
                 }
 
-                // Get the first permission in the next batch to be requested
+                // Get the first permission in the next batch to request
                 IPermission firstNextPermission = nextPermissions.get(0);
-                // If the next permission is a background permission
+                // If the next requested permission is a background permission
                 if (firstNextPermission.isBackgroundPermission(activity)) {
                     List<IPermission> foregroundPermissions = firstNextPermission.getForegroundPermissions(activity);
                     boolean grantedForegroundPermission = false;
-                    // If the corresponding foreground permission for this background permission has not been granted, do not request the background permission, as the system will not approve it anyway
-                    // If you still request in this case, it may trigger a permission explanation dialog, but no actual permission request will occur
+                    // If the corresponding foreground permission was not granted, do not request the background permission because the system will not approve it.
+                    // If you force the request anyway, a rationale dialog may appear even though no real permission request will follow.
                     if (foregroundPermissions != null && !foregroundPermissions.isEmpty()) {
                         for (IPermission foregroundPermission : foregroundPermissions) {
                             if (!foregroundPermission.isGrantedPermission(activity)) {
                                 continue;
                             }
-                            // As long as any of the foreground permissions are granted, it is considered granted
+                            // If any one of the foreground permissions is granted, treat the foreground requirement as satisfied.
                             grantedForegroundPermission = true;
                         }
                     } else {
-                        // If a permission is a background permission but does not return its corresponding foreground permission, assume the foreground permission is already granted, then request the background permission
+                        // If a permission is a background permission but does not return corresponding foreground permissions, assume the foreground requirement is already satisfied and continue.
                         grantedForegroundPermission = true;
                     }
 
                     if (!grantedForegroundPermission) {
-                        // If the foreground permission is not granted, do not request the background permission, proceed to the next round
+                        // If the foreground permission is not granted, skip the background request and move to the next round.
                         this.run();
                         return;
                     }
@@ -168,49 +175,49 @@ public final class PermissionRequestMainLogic {
     }
 
     /**
-     * Get the list of unauthorized permissions
+     * Get the list of ungranted permissions
      */
     @NonNull
     private static List<List<IPermission>> getUnauthorizedList(@NonNull Activity activity, @NonNull List<IPermission> requestList) {
-        // List of permissions to request
+        // pending permission request list
         List<List<IPermission>> unauthorizedList = new ArrayList<>(requestList.size());
-        // List of already processed permissions
+        // Processed permission list
         List<IPermission> alreadyDoneList = new ArrayList<>(requestList.size());
 
-        // Traverse the list of permissions to request
+        // Traverse the pending permission request list
         for (int i = 0; i < requestList.size(); i++) {
             IPermission permission = requestList.get(i);
 
-            // If this permission has already been processed, skip it
+            // If this permissionwas already processed earlier, so skip it
             if (PermissionUtils.containsPermission(alreadyDoneList, permission)) {
                 continue;
             }
             alreadyDoneList.add(permission);
 
-            // If this permission does not support requests, do not include it
+            // If this permissiondoes not support requests, so do not includes it in the request range
             if (!permission.isSupportRequestPermission(activity)) {
                 continue;
             }
 
-            // If this permission is already granted, do not include it
+            // If this permissionis already granted, so do not includes it in the request range
             if (permission.isGrantedPermission(activity)) {
                 continue;
             }
 
-            // ------------ The following is the logic for permissions that require startActivityForResult to authorize (usually special permissions) ------------------ //
+            // ------------ The following logic handles permissions that can only be granted through startActivityForResult, usually special permissions ------------------ //
 
-            if (permission.getPermissionChannel(activity) == PermissionChannel.START_ACTIVITY_FOR_RESULT) {
-                // If this is a permission that requires a page jump to authorize, treat it as a separate permission request
+            if (permission.getPermissionChannel(activity) == PermissionChannel.START_ACTIVITY) {
+                // If this permission requires navigating to another page to grant it, handle it as its own request batch
                 unauthorizedList.add(PermissionUtils.asArrayList(permission));
                 continue;
             }
 
-            // ------------ The following is the logic for permissions that require requestPermissions to authorize (usually dangerous permissions) ------------------ //
+            // ------------ The following logic handles permissions that can only be granted through requestPermissions, usually dangerous permissions ------------------ //
 
-            // Query the permission group type for dangerous permissions
+            // Look up the permission group for the dangerous permission
             String permissionGroup = permission.getPermissionGroup(activity);
             if (TextUtils.isEmpty(permissionGroup)) {
-                // If the permission group is empty, it means this permission is not defined in a group, so treat it as a separate request
+                // If the permission group is empty, this permission has no defined group, so request it separately
                 unauthorizedList.add(PermissionUtils.asArrayList(permission));
                 continue;
             }
@@ -218,73 +225,73 @@ public final class PermissionRequestMainLogic {
             List<IPermission> todoPermissions = null;
             for (int j = i; j < requestList.size(); j++) {
                 IPermission todoPermission = requestList.get(j);
-                // If the traversed permission is not in the same group, continue searching
+                // If the iterated permission does not belong to the same group, keep looking
                 if (!PermissionUtils.equalsString(todoPermission.getPermissionGroup(activity), permissionGroup)) {
                     continue;
                 }
 
-                // Check if the current permission supports requests
+                // Check whether the current permission supports requesting
                 if (!todoPermission.isSupportRequestPermission(activity)) {
-                    // If this permission does not support requests, skip it
+                    // If this permissiondoes not support requests, do not continue
                     continue;
                 }
 
-                // Check if the permission to be requested is already granted
+                // Check whether the permission to request is already granted
                 if (todoPermission.isGrantedPermission(activity)) {
-                    // If this permission is already granted, skip it
-                    // Github issue: https://github.com/getActivity/XXPermissions/issues/369
+                    // If this permissionis is already granted, do not continue
+                    // GitHub issue: https://github.com/getActivity/XXPermissions/issues/369
                     continue;
                 }
 
-                // If the list of permissions to process has not been initialized, initialize it
+                // Initialize the pending permission list if needed
                 if (todoPermissions == null) {
                     todoPermissions = new ArrayList<>();
                 }
-                // Add to the list of permissions to process
+                // Add it to the pending permission list
                 todoPermissions.add(todoPermission);
 
-                // If this dangerous permission has already been processed, do not add it again
+                // If this dangerous permission was already handled earlier, do not add it again
                 if (PermissionUtils.containsPermission(alreadyDoneList, todoPermission)) {
                     continue;
                 }
-                // Add to the list of already processed permissions
+                // Add it to the processed permission list
                 alreadyDoneList.add(todoPermission);
             }
 
-            // If the list of permissions to process is empty, it means the remaining permissions only appear on higher system versions, so no need to request again
+            // If the pending permission list is empty, the remaining permissions only exist on higher system versions, so no new request is needed
             if (todoPermissions == null || todoPermissions.isEmpty()) {
                 continue;
             }
 
-            // If all permissions in the list are already granted, do not include them
+            // If the pending permission list is already fully granted, exclude it from requests
             if (PermissionApi.isGrantedPermissions(activity, todoPermissions)) {
                 continue;
             }
 
-            // Check if the permission group to be requested contains background permissions (e.g., background location, background sensors). If so, they cannot be requested together and need to be split.
+            // Check whether the permission group includess background permissions, such as background location or background sensors. If so, split them into separate requests.
             List<IPermission> backgroundPermissions = null;
             Iterator<IPermission> iterator = todoPermissions.iterator();
             while (iterator.hasNext()) {
                 IPermission todoPermission = iterator.next();
-                // First check if this permission is a background permission, if not, continue searching
+                // First check whether this permission is a background permission. If not, keep searching.
                 if (!todoPermission.isBackgroundPermission(activity)) {
                     continue;
                 }
-                // Take out the background permission and put it in another collection, then treat it as a separate request
+                // Move the background permission into another list and request it separately
                 iterator.remove();
                 backgroundPermissions = new ArrayList<>();
                 backgroundPermissions.add(todoPermission);
-                // Task complete, break the loop
+                // Done with this step, skip the rest of the loop
                 break;
             }
 
             List<IPermission> foregroundPermissions = todoPermissions;
 
-            // Add foreground permissions (if not already granted)
+            // Add foreground permissions, if they are not already granted
             if (!foregroundPermissions.isEmpty()) {
                 unauthorizedList.add(foregroundPermissions);
             }
-            // Add background permissions (if not already granted)
+            // Add background permissions, if they are not already granted
             if (backgroundPermissions != null && !backgroundPermissions.isEmpty()) {
                 unauthorizedList.add(backgroundPermissions);
             }
@@ -294,7 +301,7 @@ public final class PermissionRequestMainLogic {
     }
 
     /**
-     * Initiate authorization via Fragment
+     * Start authorization through a Fragment
      */
     private static void requestPermissionsByFragment(@NonNull Activity activity,
                                                      @NonNull List<IPermission> permissions,
@@ -311,12 +318,12 @@ public final class PermissionRequestMainLogic {
             if (permission.getPermissionChannel(activity) == PermissionChannel.REQUEST_PERMISSIONS) {
                 continue;
             }
-            permissionChannel = PermissionChannel.START_ACTIVITY_FOR_RESULT;
+            permissionChannel = PermissionChannel.START_ACTIVITY;
             break;
         }
 
         if (!PermissionVersion.isAndroid6() && permissionChannel == PermissionChannel.REQUEST_PERMISSIONS) {
-            // If it is below Android 6.0, requestPermissions cannot be used, so skip this request and continue to the next
+            // On Android versions below 6.0, requestPermissions cannot be used, so skip this request batch and continue with the next one.
             finishRunnable.run();
             return;
         }
@@ -346,22 +353,22 @@ public final class PermissionRequestMainLogic {
     }
 
     /**
-     * Delay handling of permission request result
+     * Handle the permission request result with a delay
      */
     private void postDelayedHandlerRequestPermissionsResult() {
         PermissionTaskHandler.sendTask(this::handlePermissionRequestResult, 100);
     }
 
     /**
-     * Delay unlocking Activity orientation
+     * Unlock the Activity orientation with a delay
      */
     private void postDelayedUnlockActivityOrientation(@NonNull Activity activity) {
-        // Delayed execution is to allow the code in the outer callback to execute in order
+        // The delay lets caller callback code finish in order
         PermissionTaskHandler.sendTask(() -> ActivityOrientationManager.unlockActivityOrientation(activity), 100);
     }
 
     /**
-     * Handle permission request result
+     * Handle the permission request result
      */
     private void handlePermissionRequestResult() {
         final Activity activity = mActivity;
@@ -375,7 +382,7 @@ public final class PermissionRequestMainLogic {
 
         List<IPermission> grantedList = new ArrayList<>(requestList.size());
         List<IPermission> deniedList = new ArrayList<>(requestList.size());
-        // Traverse the requested permissions and classify them according to their grant status
+        // Traverse the requested permissions and classify them by grant state
         for (IPermission permission : requestList) {
             if (permission.isGrantedPermission(activity, false)) {
                 grantedList.add(permission);
@@ -387,7 +394,7 @@ public final class PermissionRequestMainLogic {
         // Permission request finished
         mPermissionInterceptor.onRequestPermissionEnd(activity, false, requestList, grantedList, deniedList, mCallBack);
 
-        // Delay unlocking Activity screen orientation
+        // Unlock the Activity orientation with a delay
         postDelayedUnlockActivityOrientation(activity);
     }
 }

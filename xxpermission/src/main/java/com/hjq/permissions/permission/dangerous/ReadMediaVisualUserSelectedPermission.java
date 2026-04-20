@@ -14,19 +14,11 @@ import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/13
- *    desc   : Permission class for accessing a user-selected subset of photos and videos
+ * Partial photo and video access permission class.
  */
 public final class ReadMediaVisualUserSelectedPermission extends DangerousPermission {
 
-    /** Current permission name.
-     *  Note: This constant field is for internal framework use only,
-     *  not provided for external references.
-     *  If you need to get the permission name string,
-     *  please obtain it directly through {@link PermissionNames}.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.READ_MEDIA_VISUAL_USER_SELECTED;
 
     public static final Parcelable.Creator<ReadMediaVisualUserSelectedPermission> CREATOR = new Parcelable.Creator<ReadMediaVisualUserSelectedPermission>() {
@@ -68,15 +60,9 @@ public final class ReadMediaVisualUserSelectedPermission extends DangerousPermis
 
     @Override
     public int getMinTargetSdkVersion(@NonNull Context context) {
-        // Partial photo and video access docs:
-        // https://developer.android.google.cn/about/versions/14/changes/partial-photo-video-access?hl=en
-        //
-        // The READ_MEDIA_VISUAL_USER_SELECTED permission is special:
-        // - It does not require raising targetSdk to request it,
-        // - But it must be combined with READ_MEDIA_IMAGES and/or READ_MEDIA_VIDEO.
-        //
-        // This permission cannot be requested alone, otherwise the system will deny it.
-        // Therefore, the minimum targetSdk requirement is 33 (Android 13) or higher.
+        // granted photos and videos permission: https://developer.android.google.cn/about/versions/14/changes/partial-photo-video-access?hl=zh-cn
+        // READ_MEDIA_VISUAL_USER_SELECTED permission , need to targetSdk version request, need to and READ_MEDIA_IMAGES and READ_MEDIA_VIDEO
+        // permissioncannot request, and READ_MEDIA_IMAGES, READ_MEDIA_VIDEO request, otherwisewill has issue, so permission targetSdk 33 above
         return PermissionVersion.ANDROID_13;
     }
 
@@ -85,14 +71,12 @@ public final class ReadMediaVisualUserSelectedPermission extends DangerousPermis
         super.checkSelfByRequestPermissions(activity, requestList);
 
         if (PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_IMAGES) ||
-                PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_VIDEO)) {
+            PermissionUtils.containsPermission(requestList, PermissionNames.READ_MEDIA_VIDEO)) {
             return;
         }
-        // READ_MEDIA_VISUAL_USER_SELECTED cannot be requested alone.
-        // It must be combined with either READ_MEDIA_IMAGES or READ_MEDIA_VIDEO, or both,
-        // otherwise the system will reject the request immediately.
+        // cannot request READ_MEDIA_VISUAL_USER_SELECTED permission, need to READ_MEDIA_IMAGES or READ_MEDIA_VIDEO permission, or has , otherwisepermission requestwill systemdirectlydenied
         throw new IllegalArgumentException("You cannot request the \"" + getPermissionName() + "\" permission alone. " +
-                "You must add either \"" + PermissionNames.READ_MEDIA_IMAGES + "\" or \"" +
-                PermissionNames.READ_MEDIA_VIDEO + "\" permission, or both.");
+                                            "must add either \"" + PermissionNames.READ_MEDIA_IMAGES + "\" or \"" +
+                                            PermissionNames.READ_MEDIA_VIDEO + "\" permission, or maybe both");
     }
 }

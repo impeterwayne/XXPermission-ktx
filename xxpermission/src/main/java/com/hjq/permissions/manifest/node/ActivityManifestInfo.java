@@ -5,25 +5,22 @@ import androidx.annotation.Nullable;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2022/11/11
- *    desc   : Activity manifest information class
+ * Activity manifest info class.
  */
 public final class ActivityManifestInfo {
 
-    /** Class name of the Activity */
+    /** Activity class name */
     @NonNull
     public String name = "";
 
-    /** Whether the Activity supports picture-in-picture mode */
-    public boolean supportsPictureInPicture = false;
+    /** Whether picture-in-picture is supported */
+    public boolean supportsPictureInPicture;
 
-    /** List of intent filters */
+    /** Intent filter list */
     @Nullable
     public List<IntentFilterManifestInfo> intentFilterInfoList;
 
-    /** List of MetaData entries */
+    /** Meta-data list */
     @Nullable
     public List<MetaDataManifestInfo> metaDataInfoList;
 }

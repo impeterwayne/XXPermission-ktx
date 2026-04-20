@@ -12,68 +12,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents the parsed information of an {@code AndroidManifest.xml} file.
- *
- * <p>This bean class aggregates various manifest node details,
- * including application, activities, services, receivers, permissions,
- * and SDK requirements.</p>
- *
- * author : Android 轮子哥
- * github : https://github.com/getActivity/XXPermissions
- * time   : 2022/11/11
+ * Manifest parsing bean class.
  */
 public final class AndroidManifestInfo {
 
-    /**
-     * The package name of the application.
-     *
-     * <p>Corresponds to the {@code package} attribute
-     * in the manifest root element.</p>
-     */
+    /** Application package name */
     @NonNull
     public String packageName = "";
 
-    /**
-     * Information about the {@code <uses-sdk>} element.
-     */
+    /** Uses-sdk info */
     @Nullable
     public UsesSdkManifestInfo usesSdkInfo;
 
-    /**
-     * List of declared {@code <uses-permission>} elements.
-     */
+    /** Permission node info */
     @NonNull
     public final List<PermissionManifestInfo> permissionInfoList = new ArrayList<>();
 
-    /**
-     * List of package names declared inside the {@code <queries>} element.
-     *
-     * <p>Introduced in Android 11 (API 30) for package visibility control.</p>
-     */
+    /** Queried package name list */
     @NonNull
     public final List<String> queriesPackageList = new ArrayList<>();
 
-    /**
-     * Information about the {@code <application>} element.
-     */
+    /** Application node info */
     @Nullable
     public ApplicationManifestInfo applicationInfo;
 
-    /**
-     * List of declared {@code <activity>} elements.
-     */
+    /** Activity node info */
     @NonNull
     public final List<ActivityManifestInfo> activityInfoList = new ArrayList<>();
 
-    /**
-     * List of declared {@code <service>} elements.
-     */
+    /** Service node info */
     @NonNull
     public final List<ServiceManifestInfo> serviceInfoList = new ArrayList<>();
 
-    /**
-     * List of declared {@code <receiver>} elements.
-     */
+    /** BroadcastReceiver node info */
     @NonNull
     public final List<BroadcastReceiverManifestInfo> receiverInfoList = new ArrayList<>();
 }

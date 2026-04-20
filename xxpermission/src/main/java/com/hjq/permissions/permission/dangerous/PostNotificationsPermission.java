@@ -10,24 +10,16 @@ import com.hjq.permissions.permission.PermissionLists;
 import com.hjq.permissions.permission.PermissionNames;
 import com.hjq.permissions.permission.base.IPermission;
 import com.hjq.permissions.permission.common.DangerousPermission;
-import com.hjq.permissions.tools.PermissionVersion;
 import com.hjq.permissions.tools.PermissionUtils;
+import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Post notifications permission class
+ * Post notifications permission class.
  */
 public final class PostNotificationsPermission extends DangerousPermission {
 
-    /** Current permission name.
-     *  Note: This constant field is for internal framework use only,
-     *  not provided for external references.
-     *  If you need to get the permission name string,
-     *  please obtain it directly through the {@link PermissionNames} class.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.POST_NOTIFICATIONS;
 
     public static final Parcelable.Creator<PostNotificationsPermission> CREATOR = new Parcelable.Creator<PostNotificationsPermission>() {
@@ -65,8 +57,7 @@ public final class PostNotificationsPermission extends DangerousPermission {
     @NonNull
     @Override
     public List<IPermission> getOldPermissions(Context context) {
-        // On Android versions below 13, enabling the notification bar service
-        // requires the old notification bar permission (virtually created by the framework).
+        // Android 13 below notification barservice, need to oldnotification permission(framework )
         return PermissionUtils.asArrayList(PermissionLists.getNotificationServicePermission());
     }
 
@@ -83,9 +74,8 @@ public final class PostNotificationsPermission extends DangerousPermission {
     @NonNull
     @Override
     public List<Intent> getPermissionSettingIntents(@NonNull Context context, boolean skipRequest) {
-        // GitHub issue address: https://github.com/getActivity/XXPermissions/issues/208
-        // POST_NOTIFICATIONS should navigate to the same permission settings page
-        // as the NOTIFICATION_SERVICE permission.
+        // GitHub issue: https://github.com/getActivity/XXPermissions/issues/208
+        // POST_NOTIFICATIONS navigate permission settings page and NOTIFICATION_SERVICE permission
         return PermissionLists.getNotificationServicePermission().getPermissionSettingIntents(context, skipRequest);
     }
 }

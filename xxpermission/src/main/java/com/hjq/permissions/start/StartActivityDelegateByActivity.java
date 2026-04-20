@@ -6,10 +6,7 @@ import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/20
- *    desc   : Implementation of {@link android.app.Activity} for starting Activities
+ * {@link android.app.Activity} activity launch implementation.
  */
 public final class StartActivityDelegateByActivity implements IStartActivityDelegate {
 

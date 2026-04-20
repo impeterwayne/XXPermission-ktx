@@ -18,18 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Full-screen notification permission class
+ * Full-screen intent permission class.
  */
 public final class UseFullScreenIntentPermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.USE_FULL_SCREEN_INTENT;
 
     public static final Parcelable.Creator<UseFullScreenIntentPermission> CREATOR = new Parcelable.Creator<UseFullScreenIntentPermission>() {
@@ -70,7 +63,7 @@ public final class UseFullScreenIntentPermission extends SpecialPermission {
             return true;
         }
         NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-        // Although this SystemService is never null, still apply defensive programming just in case
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (notificationManager == null) {
             return false;
         }
@@ -89,8 +82,7 @@ public final class UseFullScreenIntentPermission extends SpecialPermission {
             intentList.add(intent);
         }
 
-        // Based on testing, MIUI and HyperOS do not support setting full-screen notification permission in the notification page,
-        // but stock Android does.
+        // , MIUI and HyperOS notificationpagesettingsfull-screen notification permission , Android
         if (DeviceOs.isHyperOs() || DeviceOs.isMiui()) {
             intent = getAndroidSettingIntent();
             intentList.add(intent);
@@ -120,18 +112,18 @@ public final class UseFullScreenIntentPermission extends SpecialPermission {
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Indicates that this permission must be statically registered in the AndroidManifest.xml file
+        // Indicates that this permission must be declared statically in AndroidManifest.xml.
         return true;
     }
 
     @Override
     protected void checkSelfByRequestPermissions(@NonNull Activity activity, @NonNull List<IPermission> requestList) {
         super.checkSelfByRequestPermissions(activity, requestList);
-        // Full-screen notification permission must be used together with notification permissions (NOTIFICATION_SERVICE or POST_NOTIFICATIONS)
+        // The full-screen notification permission must be used together with a notification permission(NOTIFICATION_SERVICE or POST_NOTIFICATIONS)
         if (!PermissionUtils.containsPermission(requestList, PermissionNames.NOTIFICATION_SERVICE) &&
-                !PermissionUtils.containsPermission(requestList, PermissionNames.POST_NOTIFICATIONS)) {
-            throw new IllegalArgumentException("The \"" + getPermissionName() + "\" permission must be requested together with a notification permission. "
-                    + "(\"" + PermissionNames.NOTIFICATION_SERVICE + "\" or \"" + PermissionNames.POST_NOTIFICATIONS + "\")");
+            !PermissionUtils.containsPermission(requestList, PermissionNames.POST_NOTIFICATIONS)) {
+            throw new IllegalArgumentException("The \"" + getPermissionName() + "\" needs to be used together with the notification permission. "
+                + "(\"" + PermissionNames.NOTIFICATION_SERVICE + "\" or \"" + PermissionNames.POST_NOTIFICATIONS + "\")");
         }
 
         int thisPermissionIndex = -1;
@@ -149,15 +141,15 @@ public final class UseFullScreenIntentPermission extends SpecialPermission {
         }
 
         if (notificationServicePermissionIndex != -1 && notificationServicePermissionIndex > thisPermissionIndex) {
-            // Please place USE_FULL_SCREEN_INTENT permission after NOTIFICATION_SERVICE permission
-            throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.NOTIFICATION_SERVICE + "\" permission");
+            // Please place the USE_FULL_SCREEN_INTENT permission after the NOTIFICATION_SERVICE permission.
+            throw new IllegalArgumentException("Please place the " + getPermissionName() +
+                "\" permission after the \"" + PermissionNames.NOTIFICATION_SERVICE + "\" permission");
         }
 
         if (postNotificationsPermissionIndex != -1 && postNotificationsPermissionIndex > thisPermissionIndex) {
-            // Please place USE_FULL_SCREEN_INTENT permission after POST_NOTIFICATIONS permission
+            // Please place the USE_FULL_SCREEN_INTENT permission after the POST_NOTIFICATIONS permission.
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.POST_NOTIFICATIONS + "\" permission");
+                "\" permission after the \"" + PermissionNames.POST_NOTIFICATIONS + "\" permission");
         }
     }
 }

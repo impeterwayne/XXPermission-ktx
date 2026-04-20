@@ -6,22 +6,16 @@ import com.hjq.permissions.permission.base.IPermission;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/30
- *    desc   : Permission description interface
- *
- * Provides hook points to explain and wrap the permission request flow.
+ * Describes how permission requests are presented to the user.
  */
 public interface OnPermissionDescription {
 
     /**
-     * Ask whether to initiate the permission request.
+     * Asks whether the permission request should continue.
      *
-     * @param activity                 the current Activity
-     * @param requestList              list of permissions being requested
-     * @param continueRequestRunnable  runnable to continue the request
-     * @param breakRequestRunnable     runnable to cancel the request
+     * @param requestList the requested permissions
+     * @param continueRequestRunnable continues the request flow
+     * @param breakRequestRunnable stops the request flow
      */
     void askWhetherRequestPermission(@NonNull Activity activity,
                                      @NonNull List<IPermission> requestList,
@@ -29,18 +23,16 @@ public interface OnPermissionDescription {
                                      @NonNull Runnable breakRequestRunnable);
 
     /**
-     * Called before starting the permission request.
+     * Called when a permission request starts.
      *
-     * @param activity     the current Activity
-     * @param requestList  list of permissions being requested
+     * @param requestList the requested permissions
      */
     void onRequestPermissionStart(@NonNull Activity activity, @NonNull List<IPermission> requestList);
 
     /**
-     * Called after the permission request has finished.
+     * Called when a permission request finishes.
      *
-     * @param activity     the current Activity
-     * @param requestList  list of permissions being requested
+     * @param requestList the requested permissions
      */
     void onRequestPermissionEnd(@NonNull Activity activity, @NonNull List<IPermission> requestList);
 }

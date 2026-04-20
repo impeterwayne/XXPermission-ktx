@@ -13,23 +13,16 @@ import com.hjq.permissions.permission.PermissionLists;
 import com.hjq.permissions.permission.PermissionNames;
 import com.hjq.permissions.permission.base.IPermission;
 import com.hjq.permissions.permission.common.DangerousPermission;
-import com.hjq.permissions.tools.PermissionVersion;
 import com.hjq.permissions.tools.PermissionUtils;
+import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Wi-Fi permission class
+ * Wi-Fi permission class.
  */
 public final class NearbyWifiDevicesPermission extends DangerousPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant is for internal framework use only and not for external reference.
-     * If you need the permission name string, please use {@link PermissionNames}.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.NEARBY_WIFI_DEVICES;
 
     public static final Parcelable.Creator<NearbyWifiDevicesPermission> CREATOR = new Parcelable.Creator<NearbyWifiDevicesPermission>() {
@@ -61,8 +54,7 @@ public final class NearbyWifiDevicesPermission extends DangerousPermission {
 
     @Override
     public String getPermissionGroup(@NonNull Context context) {
-        // Note: On Android 13, Wi-Fi-related permissions belong to the Nearby Devices group;
-        // before Android 13, they belong to the Location group.
+        // note: On Android 13, Wi-Fi-related permissions belong to the nearby devices permission group, but before Android 13 they belonged to the location permission group
         return PermissionVersion.isAndroid13() ? PermissionGroups.NEARBY_DEVICES : PermissionGroups.LOCATION;
     }
 
@@ -74,7 +66,7 @@ public final class NearbyWifiDevicesPermission extends DangerousPermission {
     @NonNull
     @Override
     public List<IPermission> getOldPermissions(Context context) {
-        // On Android 12 and below, using Wi-Fi features requires the fine location permission
+        // Android 13 below Wi-Fi featureneed to precise location permission
         return PermissionUtils.asArrayList(PermissionLists.getAccessFineLocationPermission());
     }
 
@@ -90,46 +82,44 @@ public final class NearbyWifiDevicesPermission extends DangerousPermission {
 
     @Override
     protected void checkSelfByManifestFile(@NonNull Activity activity,
-                                           @NonNull List<IPermission> requestList,
-                                           @NonNull AndroidManifestInfo manifestInfo,
-                                           @NonNull List<PermissionManifestInfo> permissionInfoList,
-                                           @Nullable PermissionManifestInfo currentPermissionInfo) {
+                                            @NonNull List<IPermission> requestList,
+                                            @NonNull AndroidManifestInfo manifestInfo,
+                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
+                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
-        // If the version when this permission was introduced is greater than minSdkVersion,
-        // the permission may be requested on older systems; register the legacy permission in AndroidManifest.xml
+        // If the version where this permission was introduced is lower than minSdkVersion, it may be requested on older systems, so the legacy permission must also be declared in AndroidManifest.xml.
         if (getFromAndroidVersion(activity) > getMinSdkVersion(activity, manifestInfo)) {
             checkPermissionRegistrationStatus(permissionInfoList, PermissionNames.ACCESS_FINE_LOCATION, PermissionVersion.ANDROID_12_L);
         }
 
-        // Skip checks if ACCESS_FINE_LOCATION is already requested
+        // IfRequested permissionsalready includes precise location permission, check
         if (PermissionUtils.containsPermission(requestList, PermissionNames.ACCESS_FINE_LOCATION)) {
             return;
         }
-        // Skip if this permission is not declared in the manifest
+        // Skip this check if the current permission is not declared in the manifest.
         if (currentPermissionInfo == null) {
             return;
         }
-        // Skip if the manifest declaration has the neverForLocation flag
+        // Skip this check if the current permission is declared in the manifest and has the neverForLocation flag set.
         if (currentPermissionInfo.neverForLocation()) {
             return;
         }
 
-        // Wi-Fi permission docs:
-        // https://developer.android.google.cn/about/versions/13/features/nearby-wifi-devices-permission?hl=en#assert-never-for-location
-        // When targeting Android 13, consider whether your app infers physical location via Wi-Fi APIs.
-        // If not, explicitly assert this by setting usesPermissionFlags="neverForLocation" in the manifest.
+        // Wi-Fi permission: https://developer.android.google.cn/about/versions/13/features/nearby-wifi-devices-permission?hl=zh-cn#assert-never-for-location
+        // Android 13 , please appwhether will through Wi-Fi API location, If will , declare case.
+        // If you need to declare, please app manifest file usesPermissionFlags attribute neverForLocation
         String maxSdkVersionString = (currentPermissionInfo.maxSdkVersion != PermissionManifestInfo.DEFAULT_MAX_SDK_VERSION) ?
-                "android:maxSdkVersion=\"" + currentPermissionInfo.maxSdkVersion + "\" " : "";
-        // Depending on your scenario, there are two solutions:
-        //   1) If you DO NOT use Wi-Fi to derive physical location: add android:usesPermissionFlags="neverForLocation" to the manifest permission.
-        //   2) If you DO use Wi-Fi to derive physical location: when requesting the Wi-Fi permission, also request ACCESS_FINE_LOCATION at runtime.
-        // In most cases, apps do not use Wi-Fi to derive location, so option (1) is recommended.
+            "android:maxSdkVersion=\"" + currentPermissionInfo.maxSdkVersion + "\" " : "";
+        // , :
+        // 1. need to Wi-Fi permission location: you need to declare permission android:usesPermissionFlags="neverForLocation"
+        // 2. need to Wi-Fi permission location: request Wi-Fi permission , also need toruntime request ACCESS_FINE_LOCATION permission
+        // case , need to Wi-Fi permission location, so
         throw new IllegalArgumentException("If your app doesn't use " + currentPermissionInfo.name +
-                " to get physical location, please change the <uses-permission android:name=\"" +
-                currentPermissionInfo.name + "\" " + maxSdkVersionString + "/> node in the " +
-                "manifest file to <uses-permission android:name=\"" + currentPermissionInfo.name +
-                "\" android:usesPermissionFlags=\"neverForLocation\" " + maxSdkVersionString + "/>. " +
-                "If your app does need to use \"" + currentPermissionInfo.name + "\" to get physical location, " +
-                "you must also add the \"" + PermissionNames.ACCESS_FINE_LOCATION + "\" permission.");
+            " to get physical location, " + "please change the <uses-permission android:name=\"" +
+            currentPermissionInfo.name + "\" " + maxSdkVersionString + "/> node in the " +
+            "manifest file to <uses-permission android:name=\"" + currentPermissionInfo.name +
+            "\" android:usesPermissionFlags=\"neverForLocation\" " + maxSdkVersionString + "/> node, " +
+            "if your app need use \"" + currentPermissionInfo.name + "\" to get physical location, " +
+            "also need to add \"" + PermissionNames.ACCESS_FINE_LOCATION + "\" permissions");
     }
 }

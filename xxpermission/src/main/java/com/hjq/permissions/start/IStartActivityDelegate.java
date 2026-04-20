@@ -1,25 +1,20 @@
 package com.hjq.permissions.start;
 
 import android.content.Intent;
-
 import androidx.annotation.IntRange;
-import androidx.annotation.NonNull;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/20
- *    desc   : startActivity delegate interface
+ * Delegate interface for starting activities.
  */
 public interface IStartActivityDelegate {
 
     /**
-     * Launch an Activity
+     * Starts an activity.
      */
-    void startActivity(@NonNull Intent intent);
+    void startActivity(Intent intent);
 
     /**
-     * Launch an Activity (expects a result)
+     * Starts an activity for a result.
      */
-    void startActivityForResult(@NonNull Intent intent, @IntRange(from = 1, to = 65535) int requestCode);
+    void startActivityForResult(Intent intent, @IntRange(from = 1, to = 65535) int requestCode);
 }

@@ -17,18 +17,11 @@ import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/14
- *    desc   : Bluetooth advertise permission class
+ * Bluetooth advertise permission class.
  */
 public final class BluetoothAdvertisePermission extends DangerousPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is for internal framework use only and should not be referenced externally.
-     * If you need the permission name string, please use the {@link PermissionNames} class.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.BLUETOOTH_ADVERTISE;
 
     public static final Parcelable.Creator<BluetoothAdvertisePermission> CREATOR = new Parcelable.Creator<BluetoothAdvertisePermission>() {
@@ -65,15 +58,13 @@ public final class BluetoothAdvertisePermission extends DangerousPermission {
 
     @Override
     public String getPermissionGroup(@NonNull Context context) {
-        // Note: In Android 12, Bluetooth-related permissions belong to the Nearby Devices group.
-        // Before Android 12, Bluetooth-related permissions belonged to the Location group.
+        // note: On Android 12, Bluetooth-related permissions belong to the nearby devices permission group, but before Android 12 they belonged to the location permission group
         return PermissionVersion.isAndroid12() ? PermissionGroups.NEARBY_DEVICES : PermissionGroups.LOCATION;
     }
 
     @Override
     public int getMinTargetSdkVersion(@NonNull Context context) {
-        // Some OEMs changed Bluetooth permission mechanics so that even when targetSdk is below 31,
-        // apps still need to request this permission. Related issues:
+        // vendor permission , targetSdk case ( 31), need to apprequest permission, related issue :
         // 1. https://github.com/getActivity/XXPermissions/issues/123
         // 2. https://github.com/getActivity/XXPermissions/issues/302
         return PermissionVersion.ANDROID_6;
@@ -86,9 +77,7 @@ public final class BluetoothAdvertisePermission extends DangerousPermission {
                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
-        // If the version where this permission was introduced is greater than minSdkVersion,
-        // it indicates the permission may be requested on older systems. In that case,
-        // the legacy permission must be declared in AndroidManifest.xml.
+        // If the version where this permission was introduced is lower than minSdkVersion, it may be requested on older systems, so the legacy permission must also be declared in AndroidManifest.xml.
         if (getFromAndroidVersion(activity) > getMinSdkVersion(activity, manifestInfo)) {
             checkPermissionRegistrationStatus(permissionInfoList, Manifest.permission.BLUETOOTH_ADMIN, PermissionVersion.ANDROID_11);
         }

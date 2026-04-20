@@ -8,9 +8,9 @@ import android.content.Intent;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.provider.Settings;
+import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import android.text.TextUtils;
 import com.hjq.permissions.manifest.AndroidManifestInfo;
 import com.hjq.permissions.manifest.node.PermissionManifestInfo;
 import com.hjq.permissions.permission.PermissionNames;
@@ -21,18 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Notification permission class
+ * Notification permission class.
  */
 public final class NotificationServicePermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.NOTIFICATION_SERVICE;
 
     private static final String OP_POST_NOTIFICATION_FIELD_NAME = "OP_POST_NOTIFICATION";
@@ -93,7 +86,7 @@ public final class NotificationServicePermission extends SpecialPermission {
         }
 
         NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-        // Although this SystemService is never null, we still do defensive programming just in case
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (notificationManager == null) {
             return checkOpPermission(context, OP_POST_NOTIFICATION_FIELD_NAME, OP_POST_NOTIFICATION_DEFAULT_VALUE, true);
         }
@@ -115,25 +108,24 @@ public final class NotificationServicePermission extends SpecialPermission {
 
         if (PermissionVersion.isAndroid8()) {
             intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
-            // Add the app’s package name parameter
+            // addapp package name
             intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
             NotificationChannel notificationChannel = null;
-            // Although this SystemService is never null, we still do defensive programming just in case
+            // Although this SystemService should never be null, keep the check for defensive programming.
             if (notificationManager != null && !TextUtils.isEmpty(mChannelId)) {
                 notificationChannel = notificationManager.getNotificationChannel(mChannelId);
             }
-            // Preconditions for setting the notification channel id parameter:
-            // 1. The notification channel still exists
-            // 2. Notification permission is currently granted
+            // settingsnotification channel id preconditionshas
+            // 1. notification channelalso
+            // 2. current granted notificationpermission
             if (notificationChannel != null && notificationManager.areNotificationsEnabled()) {
-                // Modify the action to point to the specific notification channel’s page
+                // Action notification channel page
                 intent.setAction(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
-                // Specify the notification channel id
+                // notification channel id
                 intent.putExtra(Settings.EXTRA_CHANNEL_ID, notificationChannel.getId());
                 if (PermissionVersion.isAndroid11()) {
-                    // In higher versions, the system first tries to find the notification channel using conversation id,
-                    // if not found, then falls back to the channel id
+                    // versionwill preferentially will id finds notification channel, id finds notification channel
                     intent.putExtra(Settings.EXTRA_CONVERSATION_ID, notificationChannel.getConversationId());
                 }
                 intentList.add(intent);
@@ -184,9 +176,8 @@ public final class NotificationServicePermission extends SpecialPermission {
                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
 
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_13) {
-            // If the project already targets Android 13, then the POST_NOTIFICATIONS permission must be added in the manifest,
-            // otherwise it will not be possible to request notification permissions
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_13) {
+            // If the current projectalready Android 13, need toadd to the manifest file POST_NOTIFICATIONS permission, otherwisecauses requestnotification permission
             PermissionManifestInfo postNotificationsPermission = findPermissionInfoByList(permissionInfoList, PermissionNames.POST_NOTIFICATIONS);
             checkPermissionRegistrationStatus(postNotificationsPermission, PermissionNames.POST_NOTIFICATIONS, PermissionManifestInfo.DEFAULT_MAX_SDK_VERSION);
         }

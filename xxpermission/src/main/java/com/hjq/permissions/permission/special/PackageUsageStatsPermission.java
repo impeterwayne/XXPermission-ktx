@@ -14,18 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Permission class for viewing app usage statistics
+ * Usage access permission class.
  */
 public final class PackageUsageStatsPermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.PACKAGE_USAGE_STATS;
 
     public static final Parcelable.Creator<PackageUsageStatsPermission> CREATOR = new Parcelable.Creator<PackageUsageStatsPermission>() {
@@ -76,8 +69,8 @@ public final class PackageUsageStatsPermission extends SpecialPermission {
 
         if (PermissionVersion.isAndroid10()) {
             intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-            // Based on testing, adding the package name only works on Android 10 and above
-            // If you add the package name on Android 9 or below, it will fail to jump
+            // , has Android 10 above package name has
+            // If Android 10 below package namecauses navigate
             intent.setData(getPackageNameUri(context));
             intentList.add(intent);
         }
@@ -95,7 +88,7 @@ public final class PackageUsageStatsPermission extends SpecialPermission {
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Indicates that this permission needs to be statically registered in the AndroidManifest.xml file
+        // Indicates that this permission must be declared statically in AndroidManifest.xml.
         return true;
     }
 }

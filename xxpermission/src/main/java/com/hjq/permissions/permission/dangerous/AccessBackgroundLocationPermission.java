@@ -20,18 +20,11 @@ import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Background location permission class
+ * Background location permission class.
  */
 public final class AccessBackgroundLocationPermission extends DangerousPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is for internal framework use only and should not be referenced externally.
-     * If you need the permission name string, use the {@link PermissionNames} class.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.ACCESS_BACKGROUND_LOCATION;
 
     public static final Parcelable.Creator<AccessBackgroundLocationPermission> CREATOR = new Parcelable.Creator<AccessBackgroundLocationPermission>() {
@@ -64,21 +57,13 @@ public final class AccessBackgroundLocationPermission extends DangerousPermissio
     @NonNull
     @Override
     public PermissionPageType getPermissionPageType(@NonNull Context context) {
-        // Background location permission is always a transparent Activity on HyperOS or MIUI
-        if (DeviceOs.isHyperOs() || DeviceOs.isMiui()) {
+        // background location permission request page Android 10 also transparent Activity, Android 11 opaque Activity
+        if (PermissionVersion.getSdkVersion() == getFromAndroidVersion(context)) {
             return PermissionPageType.TRANSPARENT_ACTIVITY;
         }
-        // Background location permission is always a transparent Activity on MagicOS
-        if (DeviceOs.isMagicOs()) {
-            return PermissionPageType.TRANSPARENT_ACTIVITY;
-        }
-        // Background location permission is always a transparent Activity on HarmonyOS
-        if (DeviceOs.isHarmonyOs()) {
-            return PermissionPageType.TRANSPARENT_ACTIVITY;
-        }
-        // On Android 10, the background location page is a transparent Activity,
-        // but starting from Android 11 it became an opaque Activity
-        if (PermissionVersion.isAndroid10() && !PermissionVersion.isAndroid11()) {
+        // background location permission HyperOS, MIUI, MagicOS, HarmonyOS, EMUI has consistently been a transparent Activity
+        if (DeviceOs.isHyperOs() || DeviceOs.isMiui() || DeviceOs.isMagicOs() ||
+            DeviceOs.isHarmonyOs() || DeviceOs.isHarmonyOsNextAndroidCompatible() || DeviceOs.isEmui()) {
             return PermissionPageType.TRANSPARENT_ACTIVITY;
         }
         return PermissionPageType.OPAQUE_ACTIVITY;
@@ -97,32 +82,32 @@ public final class AccessBackgroundLocationPermission extends DangerousPermissio
     @NonNull
     @Override
     public List<IPermission> getForegroundPermissions(@NonNull Context context) {
-        // Check if running on Android 12 or higher
+        // Check whether the current runtime is on Android 12 above
         if (PermissionVersion.isAndroid12()) {
-            // From Android 12 onward, foreground location can be either fine or coarse
+            // If , foreground location permission precise location permission approximate location permission
             return PermissionUtils.asArrayList(PermissionLists.getAccessFineLocationPermission(), PermissionLists.getAccessCoarseLocationPermission());
         } else {
-            // On versions prior to Android 12, foreground location must be fine location
+            // Ifnot , foreground location permission precise location permission
             return PermissionUtils.asArrayList(PermissionLists.getAccessFineLocationPermission());
         }
     }
 
     @Override
     public boolean isBackgroundPermission(@NonNull Context context) {
-        // This permission is a background permission
+        // Indicates that the current permission is a background permission
         return true;
     }
 
     @Override
     protected boolean isGrantedPermissionByStandardVersion(@NonNull Context context, boolean skipRequest) {
         if (PermissionVersion.isAndroid12()) {
-            // On Android 12+, foreground location can be either fine or coarse
+            // on Android 12 and later, foreground location permission precise location permission approximate location permission
             if (!PermissionLists.getAccessFineLocationPermission().isGrantedPermission(context, skipRequest) &&
-                    !PermissionLists.getAccessCoarseLocationPermission().isGrantedPermission(context, skipRequest)) {
+                !PermissionLists.getAccessCoarseLocationPermission().isGrantedPermission(context, skipRequest)) {
                 return false;
             }
         } else {
-            // On Android 11 and below, foreground location must be fine location
+            // on Android 11 and earlier, foreground location permissionrequires the precise location permission
             if (!PermissionLists.getAccessFineLocationPermission().isGrantedPermission(context, skipRequest)) {
                 return false;
             }
@@ -137,17 +122,16 @@ public final class AccessBackgroundLocationPermission extends DangerousPermissio
 
     @Override
     protected boolean isDoNotAskAgainPermissionByStandardVersion(@NonNull Activity activity) {
-        // If foreground location permission is not granted,
-        // the “don’t ask again” state for background location should follow it
+        // If the foreground location permission is not granted, background location permissionDo not ask again state should follow the foreground location permission
         if (PermissionVersion.isAndroid12()) {
-            // On Android 12+, foreground location can be either fine or coarse
+            // on Android 12 and later, foreground location permission precise location permission approximate location permission
             if (!PermissionLists.getAccessFineLocationPermission().isGrantedPermission(activity) &&
-                    !PermissionLists.getAccessCoarseLocationPermission().isGrantedPermission(activity)) {
+                !PermissionLists.getAccessCoarseLocationPermission().isGrantedPermission(activity)) {
                 return PermissionLists.getAccessFineLocationPermission().isDoNotAskAgainPermission(activity) &&
                         PermissionLists.getAccessCoarseLocationPermission().isDoNotAskAgainPermission(activity);
             }
         } else {
-            // On Android 11 and below, foreground location must be fine location
+            // on Android 11 and earlier, foreground location permissionrequires the precise location permission
             if (!PermissionLists.getAccessFineLocationPermission().isGrantedPermission(activity)) {
                 return PermissionLists.getAccessFineLocationPermission().isDoNotAskAgainPermission(activity);
             }
@@ -162,10 +146,10 @@ public final class AccessBackgroundLocationPermission extends DangerousPermissio
 
     @Override
     public int getRequestIntervalTime(@NonNull Context context) {
-        // On Android 11 devices, requesting foreground permission immediately followed by background permission
-        // often fails. To avoid this, add a small delay.
-        // Why 150ms? Tests show that 100ms still fails occasionally, but 150ms worked consistently.
-        // Official docs: https://developer.android.google.cn/about/versions/11/privacy?hl=zh-cn
+        // , on Android 11 devices, requestforeground permission, requestbackground permission will failure
+        // hereto avoid this case, so a small delay is added, which avoids the problem
+        // Why is the delay 150 milliseconds? In practice, 100 ms can still fail occasionally, but 150 ms worked reliably in repeated tests
+        // Official documentation: https://developer.android.google.cn/about/versions/11/privacy?hl=zh-cn
         return isSupportRequestPermission(context) ? 150 : 0;
     }
 
@@ -176,12 +160,12 @@ public final class AccessBackgroundLocationPermission extends DangerousPermissio
                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
-        // If targeting Android 12 and requesting ACCESS_FINE_LOCATION,
-        // you must also request ACCESS_COARSE_LOCATION in the same runtime request.
-        // Otherwise, the system ignores the request and logs:
-        // "ACCESS_FINE_LOCATION must be requested with ACCESS_COARSE_LOCATION"
-        // Docs: https://developer.android.google.cn/develop/sensors-and-location/location/permissions/runtime?hl=zh-cn#approximate-request
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_12) {
+        // If your app targets Android 12 and requests ACCESS_FINE_LOCATION permission
+        // you must also request ACCESS_COARSE_LOCATION permission.You must includes both permissions in the same runtime request
+        // If you try to request only ACCESS_FINE_LOCATION, the system ignores the request and logs the following error in Logcat:
+        // ACCESS_FINE_LOCATION must be requested with ACCESS_COARSE_LOCATION
+        // Official compatibility documentation: https://developer.android.google.cn/develop/sensors-and-location/location/permissions/runtime?hl=zh-cn#approximate-request
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_12) {
             checkPermissionRegistrationStatus(permissionInfoList, PermissionNames.ACCESS_COARSE_LOCATION);
             checkPermissionRegistrationStatus(permissionInfoList, PermissionNames.ACCESS_FINE_LOCATION);
         } else {
@@ -192,22 +176,22 @@ public final class AccessBackgroundLocationPermission extends DangerousPermissio
     @Override
     protected void checkSelfByRequestPermissions(@NonNull Activity activity, @NonNull List<IPermission> requestList) {
         super.checkSelfByRequestPermissions(activity, requestList);
-        // If targeting Android 12 and requesting ACCESS_FINE_LOCATION,
-        // you must also request ACCESS_COARSE_LOCATION in the same runtime request.
-        // Otherwise, the system ignores the request and logs:
-        // "ACCESS_FINE_LOCATION must be requested with ACCESS_COARSE_LOCATION"
-        // Docs: https://developer.android.google.cn/develop/sensors-and-location/location/permissions/runtime?hl=zh-cn#approximate-request
-        if (PermissionVersion.getTargetVersion(activity) >= PermissionVersion.ANDROID_12 &&
-                PermissionUtils.containsPermission(requestList, PermissionNames.ACCESS_COARSE_LOCATION) &&
-                !PermissionUtils.containsPermission(requestList, PermissionNames.ACCESS_FINE_LOCATION)) {
-            // Background location request can omit coarse location,
-            // but must include fine location (otherwise no permission dialog will appear).
-            // On Android 12+, both fine and coarse can serve as foreground permissions.
-            // For compatibility with Android 11 and below, fine location is still required.
-            // The framework checks specifically for cases where coarse is included but fine is missing,
-            // since developers may split foreground and background permission requests separately.
+        // If your app targets Android 12 and requests ACCESS_FINE_LOCATION permission
+        // you must also request ACCESS_COARSE_LOCATION permission.You must includes both permissions in the same runtime request
+        // If you try to request only ACCESS_FINE_LOCATION, the system ignores the request and logs the following error in Logcat:
+        // ACCESS_FINE_LOCATION must be requested with ACCESS_COARSE_LOCATION
+        // Official compatibility documentation: https://developer.android.google.cn/develop/sensors-and-location/location/permissions/runtime?hl=zh-cn#approximate-request
+        if (PermissionVersion.getTargetSdkVersion(activity) >= PermissionVersion.ANDROID_12 &&
+            PermissionUtils.containsPermission(requestList, PermissionNames.ACCESS_COARSE_LOCATION) &&
+            !PermissionUtils.containsPermission(requestList, PermissionNames.ACCESS_FINE_LOCATION)) {
+            // A background location request does not have to includes approximate location permission, but it must includes the precise location permission, otherwise the background location permission cannot be requested
+            // causesthe authorization dialog cannot be shown, , Android 12 this issue has been resolved
+            // on Android 12 and later, request the background location permission precise location permission approximate location permission foreground location permission
+            // compatibility Android 12 below devicealso , otherwise Android 11 belowdevicewill
+            // This also explains why the code does not simply check whether precise location permission is includesd, and instead specifically checks for the case where approximate location permission is present but precise location permission is missing
+            // This is because the framework considers that callers may splitforeground location permission (includesprecise location and approximate location permission) and background location permissioninto two separate permission requests
             throw new IllegalArgumentException("Applying for background positioning permissions must include \"" +
-                    PermissionNames.ACCESS_FINE_LOCATION + "\"");
+                                                PermissionNames.ACCESS_FINE_LOCATION + "\"");
         }
 
         int thisPermissionIndex = -1;
@@ -225,15 +209,15 @@ public final class AccessBackgroundLocationPermission extends DangerousPermissio
         }
 
         if (accessFineLocationPermissionIndex != -1 && accessFineLocationPermissionIndex > thisPermissionIndex) {
-            // ACCESS_BACKGROUND_LOCATION must come after ACCESS_FINE_LOCATION
+            // Please place the ACCESS_BACKGROUND_LOCATION permission after the ACCESS_FINE_LOCATION permission.
             throw new IllegalArgumentException("Please place the " + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.ACCESS_FINE_LOCATION + "\" permission");
+                "\" permission after the \"" + PermissionNames.ACCESS_FINE_LOCATION + "\" permission");
         }
 
         if (accessCoarseLocationPermissionIndex != -1 && accessCoarseLocationPermissionIndex > thisPermissionIndex) {
-            // ACCESS_BACKGROUND_LOCATION must come after ACCESS_COARSE_LOCATION
+            // Please place the ACCESS_BACKGROUND_LOCATION permission after the ACCESS_COARSE_LOCATION permission.
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + PermissionNames.ACCESS_COARSE_LOCATION + "\" permission");
+                "\" permission after the \"" + PermissionNames.ACCESS_COARSE_LOCATION + "\" permission");
         }
     }
 }

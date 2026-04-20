@@ -87,10 +87,10 @@ class MainActivity : AppCompatActivity() {
         val context = this@MainActivity
         // Get a specific message based on the permission
         val message = when (permission) {
-            PermissionLists.getPostNotificationsPermission().getRequestPermissionName(this) -> "We need notification permission to send you important updates and alerts."
-            PermissionLists.getUseFullScreenIntentPermission().getRequestPermissionName(this) -> "This permission is required to show critical alerts (like an incoming call) as full-screen notifications."
-            PermissionLists.getScheduleExactAlarmPermission().getRequestPermissionName(this) -> "We need to schedule exact alarms for timely reminders and critical tasks."
-            PermissionLists.getSystemAlertWindowPermission().getRequestPermissionName(this) -> "This permission allows the app to display information over other apps, which is needed for some features."
+            PermissionLists.getPostNotificationsPermission().getPermissionName() -> "We need notification permission to send you important updates and alerts."
+            PermissionLists.getUseFullScreenIntentPermission().getPermissionName() -> "This permission is required to show critical alerts (like an incoming call) as full-screen notifications."
+            PermissionLists.getScheduleExactAlarmPermission().getPermissionName() -> "We need to schedule exact alarms for timely reminders and critical tasks."
+            PermissionLists.getSystemAlertWindowPermission().getPermissionName() -> "This permission allows the app to display information over other apps, which is needed for some features."
             else -> "This permission is required for the app to function properly." // Fallback
         }
 
@@ -119,10 +119,10 @@ class MainActivity : AppCompatActivity() {
     ) {
         val context = this@MainActivity
         val message = when (permission) {
-            PermissionLists.getPostNotificationsPermission().getRequestPermissionName(this) -> "You have permanently denied notification permission. To enable it, please go to the app settings."
-            PermissionLists.getUseFullScreenIntentPermission().getRequestPermissionName(this) -> "You have permanently denied the full-screen intent permission. Please go to app settings to enable it."
-            PermissionLists.getScheduleExactAlarmPermission().getRequestPermissionName(this) -> "You have permanently denied scheduling exact alarms. Please go to app settings to enable it."
-            PermissionLists.getSystemAlertWindowPermission().getRequestPermissionName(this) -> "You have permanently denied the 'display over other apps' permission. Please go to app settings to enable it."
+            PermissionLists.getPostNotificationsPermission().getPermissionName() -> "You have permanently denied notification permission. To enable it, please go to the app settings."
+            PermissionLists.getUseFullScreenIntentPermission().getPermissionName() -> "You have permanently denied the full-screen intent permission. Please go to app settings to enable it."
+            PermissionLists.getScheduleExactAlarmPermission().getPermissionName() -> "You have permanently denied scheduling exact alarms. Please go to app settings to enable it."
+            PermissionLists.getSystemAlertWindowPermission().getPermissionName() -> "You have permanently denied the 'display over other apps' permission. Please go to app settings to enable it."
             else -> "You have permanently denied a required permission. Please go to app settings to enable it."
         }
 

@@ -19,18 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Picture-in-Picture permission class
+ * Picture-in-picture permission class.
  */
 public final class PictureInPicturePermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.PICTURE_IN_PICTURE;
 
     public static final Parcelable.Creator<PictureInPicturePermission> CREATOR = new Parcelable.Creator<PictureInPicturePermission>() {
@@ -87,7 +80,7 @@ public final class PictureInPicturePermission extends SpecialPermission {
             intent.setData(getPackageNameUri(context));
             intentList.add(intent);
 
-            // If adding the package name to the data prevents jumping, remove the package name data
+            // If adding the package name data prevents navigation, remove the package name data.
             intent = new Intent(action);
             intentList.add(intent);
         }
@@ -118,18 +111,18 @@ public final class PictureInPicturePermission extends SpecialPermission {
         for (int i = 0; i < activityInfoList.size(); i++) {
             boolean supportsPictureInPicture = activityInfoList.get(i).supportsPictureInPicture;
             if (supportsPictureInPicture) {
-                // Stop the loop and return
+                // loop return
                 return;
             }
         }
 
         /*
-         No Activity was found to have registered android:supportsPictureInPicture="true".
-         Please add this attribute to a subclass of your Activity in the AndroidManifest.xml file,
-         otherwise it will not be possible to request this permission.
+         * No Activity was found with the android:supportsPictureInPicture="true" attribute.
+         * Register this attribute for the target Activity in the AndroidManifest.xml file,
+         * otherwise this permission cannot be requested correctly.
          */
         throw new IllegalArgumentException("No Activity was found to have registered the android:supportsPictureInPicture=\"true\" property, " +
-                "Please register this property to " + activity.getClass().getName() + " class in the AndroidManifest.xml file, "
-                + "otherwise it will lead to can't apply for the permission");
+            "Please register this property to " + activity.getClass().getName() + " class by AndroidManifest.xml file, "
+            + "otherwise it will lead to can't apply for the permission");
     }
 }

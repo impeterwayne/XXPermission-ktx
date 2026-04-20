@@ -13,82 +13,85 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2021/02/09
- *    desc   : Permission error-checking utilities.
- *             Validates Activities, Fragments, and permission inputs.
+ * Validation helpers for permission requests.
  */
 public final class PermissionChecker {
 
-    /**
-     * Check whether the {@link android.app.Activity} is in a valid state.
-     */
+    /** Validates the activity state before requesting permissions. */
     public static void checkActivityStatus(@Nullable Activity activity) {
-        // Verify the Activity state before requesting permissions.
+        // Check whether the current Activity state is valid, If it is not, do not request permissions
         if (activity == null) {
-            // The Context instance must be an Activity.
+            // The Context instance must be an Activity object
             throw new IllegalArgumentException("The instance of the context must be an activity object");
         }
 
         if (activity.isFinishing()) {
-            // The Activity must not be finishing. This often happens after an async operation.
-            // Ensure the Activity state is valid before requesting permissions.
+            // The current Activity object must not be finishing, This often happens when permissions are requested after an asynchronous operation
+            // Please verify the Activity state in the caller before entering the permission request flow
             throw new IllegalStateException("The activity has been finishing, " +
-                    "please manually determine the status of the activity");
+                "please manually determine the status of the activity");
         }
 
         if (activity.isDestroyed()) {
-            // The Activity must not be destroyed. This often happens after an async operation.
-            // Ensure the Activity state is valid before requesting permissions.
+            // The current Activity object must not be destroyed, This often happens when permissions are requested after an asynchronous operation
+            // Please verify the Activity state in the caller before entering the permission request flow
             throw new IllegalStateException("The activity has been destroyed, " +
-                    "please manually determine the status of the activity");
+                "please manually determine the status of the activity");
         }
     }
 
-    /**
-     * Check whether the {@link android.app.Fragment} is in a valid state.
-     */
+    /** Validates the AndroidX fragment state before requesting permissions. */
+    public static void checkAndroidXFragmentStatus(@NonNull androidx.fragment.app.Fragment xFragment) {
+        if (!xFragment.isAdded()) {
+            // This Fragment is not attached
+            throw new IllegalStateException("This androidX fragment has no binding added, " +
+                "please manually determine the status of the androidX fragment");
+        }
+
+        if (xFragment.isRemoving()) {
+            // This Fragment has already been removed
+            throw new IllegalStateException("This androidX fragment has been removed, " +
+                "please manually determine the status of the androidX fragment");
+        }
+    }
+
+    /** Validates the framework fragment state before requesting permissions. */
     @SuppressWarnings("deprecation")
-    public static void checkAppFragmentStatus(@NonNull Fragment appFragment) {
-        if (!appFragment.isAdded()) {
-            // This Fragment has not been added/bound.
-            throw new IllegalStateException("This app fragment has no binding added, " +
-                    "please manually determine the status of the app fragment");
+    public static void checkAndroidFragmentStatus(@NonNull Fragment fragment) {
+        if (!fragment.isAdded()) {
+            // This Fragment is not attached
+            throw new IllegalStateException("This android fragment has no binding added, " +
+                "please manually determine the status of the android fragment");
         }
 
-        if (appFragment.isRemoving()) {
-            // This Fragment is being removed.
-            throw new IllegalStateException("This app fragment has been removed, " +
-                    "please manually determine the status of the app fragment");
+        if (fragment.isRemoving()) {
+            // This Fragment has already been removed
+            throw new IllegalStateException("This android fragment has been removed, " +
+                "please manually determine the status of the android fragment");
         }
     }
 
-    /**
-     * Validate the incoming permission list.
-     */
+    /** Validates the incoming permission list. */
     public static void checkPermissionList(@NonNull Activity activity, @Nullable List<IPermission> requestList, @Nullable AndroidManifestInfo manifestInfo) {
         if (requestList == null || requestList.isEmpty()) {
-            // You cannot request permissions with an empty list.
+            // No permissions were passed in, yet a runtime permission request was attempted?
             throw new IllegalArgumentException("The requested permission cannot be empty");
         }
 
         for (IPermission permission : requestList) {
-            // Verify the Parcelable implementation.
+            // Check whether the permission Parcelable implementation has issues
             checkPermissionParcelable(permission);
-            // Let each permission validate its own compliance.
+            // Let the permission validate itself
             permission.checkCompliance(activity, requestList, manifestInfo);
         }
     }
 
-    /**
-     * Verify the Parcelable implementation of a permission class.
-     */
+    /** Validates the permission Parcelable implementation. */
     public static void checkPermissionParcelable(@NonNull IPermission permission) {
         Class<? extends IPermission> clazz = permission.getClass();
         String className = clazz.getName();
 
-        // Fetch the CREATOR field.
+        // Get the CREATOR field
         Field creatorField = null;
         try {
             creatorField = permission.getClass().getDeclaredField("CREATOR");
@@ -97,60 +100,62 @@ public final class PermissionChecker {
         }
 
         if (creatorField == null) {
-            // The permission class does not define a CREATOR field.
+            // This permission class does not define a CREATOR field
             throw new IllegalArgumentException("This permission class does not define the CREATOR field");
         }
 
-        // Get the CREATOR object.
+        // get CREATOR object
         Object creatorObject;
         try {
-            // For static fields, use null as the instance.
+            // Use null as the instance for a static field
             creatorObject = creatorField.get(null);
         } catch (Exception e) {
-            // Access to the CREATOR field failed; it must be declared as public static final.
+            // An error occurred while accessing the CREATOR field in the permission class. Please declare the CREATOR field as public static final
             throw new IllegalArgumentException("The CREATOR field in the " + className +
-                    " has an access exception. Please modify CREATOR field with \"public static final\"");
+                " has an access exception. Please modify CREATOR field with \"public static final\"");
         }
 
         if (!(creatorObject instanceof Parcelable.Creator)) {
-            // The CREATOR field is not of type android.os.Parcelable.Creator.
+            // The CREATOR field in this permission class is not of type android.os.Parcelable.Creator
             throw new IllegalArgumentException("The CREATOR field in this " + className +
-                    " is not of type " + Parcelable.Creator.class.getName());
+                " is not of type " + Parcelable.Creator.class.getName());
         }
 
-        // Read the field's generic type.
+        // Get the generic type of the field
         Type genericType = creatorField.getGenericType();
 
-        // Ensure it’s a parameterized type.
+        // Check whether it is a parameterized type
         if (!(genericType instanceof ParameterizedType)) {
-            // The generic type defined for CREATOR is missing.
+            // The generic type declared on the CREATOR field in this permission class is empty
             throw new IllegalArgumentException("The generic type defined for the CREATOR field in this " + className + " is empty");
         }
 
-        // Extract generic arguments.
+        // Get the generic argument
         ParameterizedType parameterizedType = (ParameterizedType) genericType;
         Type[] typeArguments = parameterizedType.getActualTypeArguments();
 
-        // Ensure there is exactly one generic argument.
+        // Check whether there is exactly one generic argument
         if (typeArguments.length != 1) {
-            // CREATOR must define exactly one generic parameter.
+            // The generic type count declared on the CREATOR field in this permission class must be exactly one
             throw new IllegalArgumentException("The number of generics defined in the CREATOR field of this " + className + " can only be one");
         }
 
-        // Validate the generic argument matches the current class.
+        // Get the generic argument type
         Type typeArgument = typeArguments[0];
+
+        // Check whether the generic argument type matches the current class
         if (!(typeArgument instanceof Class && clazz.isAssignableFrom((Class<?>) typeArgument))) {
-            // The generic type for CREATOR is incorrect.
+            // The generic type declared on the CREATOR field in this permission class is incorrect
             throw new IllegalArgumentException("The generic type defined in the CREATOR field of this " + className + " is incorrect");
         }
 
-        // Sanity-check by invoking newArray.
+        // Call the newArray method directly to create the array
         Parcelable.Creator<?> parcelableCreator = (Parcelable.Creator<?>) creatorObject;
         Object[] array = parcelableCreator.newArray(0);
         if (array == null) {
-            // CREATOR.newArray returned null; it must not return null.
+            // The newArray method of the CREATOR field in this permission class returned null, but it must not return null
             throw new IllegalArgumentException("The newArray method of the CREATOR field in this " + className +
-                    " returns an empty value. This method cannot return an empty value");
+                " returns an empty value. This method cannot return an empty value");
         }
     }
 }

@@ -20,14 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/07/14
- *    desc   : Base class for health data permissions
- *    doc    : https://developer.android.google.cn/health-and-fitness/guides/health-connect/develop/get-started?hl=en
- *             https://developer.android.google.cn/health-and-fitness/guides/health-connect/plan/data-types?hl=en
- *             https://developer.android.google.cn/health-and-fitness/guides/health-connect/plan/availability?hl=en
- *             https://www.youtube.com/playlist?list=PLWz5rJ2EKKc_m5mZzWneZ6MbLDBhKcyMS
+ * Base class for Health Connect data permissions.
  */
 public abstract class HealthDataBasePermission extends DangerousPermission {
 
@@ -56,21 +49,22 @@ public abstract class HealthDataBasePermission extends DangerousPermission {
         List<Intent> intentList = super.getPermissionSettingIntents(context, skipRequest);
 
         Intent intent;
-        // On some Android 14 ~ Android 15 devices, the app settings page does not provide an entry
-        // for Health Data Sharing permissions. In this case, jump directly to the Health Data Sharing
-        // settings page. On Android 16, jumping to the app details page works directly.
+        // Android 14 ~ Android 15 devices, permission settings page nohealth datasharingpermission entry ,
+        // soheredirectlynavigate health datasharing permission settings page, Android 16 directlynavigate app details page
         if (PermissionVersion.isAndroid14() && !PermissionVersion.isAndroid16()) {
             List<Intent> healthIntentList = new ArrayList<>(3);
 
-            // ACTION_MANAGE_HEALTH_PERMISSIONS works on Android 14 but fails on Android 15:
-            // java.lang.SecurityException: Permission Denial ... requires android.permission.GRANT_RUNTIME_PERMISSIONS
+            // ACTION_MANAGE_HEALTH_PERMISSIONS Intent Android 14 navigate, Android 15 navigatewill , nopermission navigate page
+            // java.lang.SecurityException: Permission Denial: starting Intent { act=android.health.connect.action.MANAGE_HEALTH_PERMISSIONS xflg=0x4
+            // cmp=com.google.android.healthconnect.controller/com.android.healthconnect.controller.PermissionControllerEntryPoint (has extras) } from
+            // ProcessRecord{18b95b4 25796:com.hjq.permissions.demo/u0a222} (pid=25796, uid=10222) requires android.permission.GRANT_RUNTIME_PERMISSIONS
             if (!PermissionVersion.isAndroid15()) {
                 String action = HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS;
                 intent = new Intent(action);
                 intent.putExtra(Intent.EXTRA_PACKAGE_NAME, context.getPackageName());
                 healthIntentList.add(intent);
 
-                // If failure is caused by including package extras, also try without package name
+                // If adding the package name data prevents navigation, remove the package name data.
                 intent = new Intent(action);
                 healthIntentList.add(intent);
             }
@@ -79,7 +73,7 @@ public abstract class HealthDataBasePermission extends DangerousPermission {
             intent = new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS");
             healthIntentList.add(intent);
 
-            // Insert Health Data Sharing intents at the beginning so they are prioritized
+            // health datasharing permission settings pageadd Intentlist , earlier, will preferentially navigate Intent
             intentList.addAll(0, healthIntentList);
         }
 
@@ -108,7 +102,7 @@ public abstract class HealthDataBasePermission extends DangerousPermission {
             healthCategory = "android.intent.category.HEALTH_PERMISSIONS";
         }
 
-        // Check if the manifest has registered the Health Privacy Policy activity intent
+        // current whether declare privacy policypage Intent
         boolean registeredHealthPrivacyPolicyAction = false;
         for (ActivityManifestInfo activityInfo : manifestInfo.activityInfoList) {
             List<IntentFilterManifestInfo> intentFilterInfoList = activityInfo.intentFilterInfoList;
@@ -117,31 +111,31 @@ public abstract class HealthDataBasePermission extends DangerousPermission {
             }
             for (IntentFilterManifestInfo intentFilterInfo : intentFilterInfoList) {
                 if (intentFilterInfo.actionList.contains(healthAction) &&
-                        intentFilterInfo.categoryList.contains(healthCategory)) {
+                    intentFilterInfo.categoryList.contains(healthCategory)) {
                     registeredHealthPrivacyPolicyAction = true;
                     break;
                 }
             }
             if (registeredHealthPrivacyPolicyAction) {
-                // Stop once found
+                // Ifalready declare,
                 break;
             }
         }
 
         if (!registeredHealthPrivacyPolicyAction) {
             String xmlCode = "\t\t<intent-filter>\n"
-                    + "\t\t    <action android:name=\"" + healthAction + "\" />\n"
-                    + "\t\t    <category android:name=\"" + healthCategory + "\" />\n"
-                    + "\t\t</intent-filter>";
-            // Health Connect requires declaring an entry point for displaying the app’s privacy policy dialog:
-            // https://developer.android.google.cn/health-and-fitness/guides/health-connect/develop/get-started?hl=en#show-privacy-policy
-            // Entry points for users include:
-            //   1. App details > Permissions > Health Data Sharing > Read Privacy Policy
-            //   2. Settings > Security & Privacy > Privacy > Health Connect > Selected App > Read Privacy Policy
-            //   3. Settings > Security & Privacy > Privacy > Privacy Dashboard > Other Permissions > Health Connect > Selected App > Read Privacy Policy
-            //   4. Settings > Security & Privacy > Privacy > Permission Manager > Health Connect > Selected App > Read Privacy Policy
+                           + "\t\t    <action android:name=\"" + healthAction + "\" />\n"
+                           + "\t\t    <category android:name=\"" + healthCategory + "\" />\n"
+                           + "\t\t</intent-filter>";
+            // must app privacy dialog
+            // https://developer.android.google.cn/health-and-fitness/guides/health-connect/develop/get-started?hl=zh-cn#show-privacy-policy
+            // entry , user below :
+            // 1. app details page > permission > health datasharing > privacy policy
+            // 2. settings > security privacy > privacy > Health Connect > selectedapp > privacy policy
+            // 3. settings > security privacy > privacy > > view permission > Health Connect > selectedapp > privacy policy
+            // 4. settings > security privacy > privacy > permissionmanager > Health Connect > selectedapp > privacy policy
             throw new IllegalArgumentException("Please add an intent filter for \"" + activity.getClass() +
-                    "\" in the AndroidManifest.xml file.\n" + xmlCode);
+                                                "\" in the AndroidManifest.xml file.\n" + xmlCode);
         }
     }
 }

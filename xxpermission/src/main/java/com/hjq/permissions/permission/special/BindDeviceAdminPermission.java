@@ -7,9 +7,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Parcel;
+import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import android.text.TextUtils;
 import com.hjq.permissions.manifest.AndroidManifestInfo;
 import com.hjq.permissions.manifest.node.BroadcastReceiverManifestInfo;
 import com.hjq.permissions.manifest.node.IntentFilterManifestInfo;
@@ -25,10 +25,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/15
- *    desc   : Device Administrator permission class
+ * Device admin permission class.
  */
 public final class BindDeviceAdminPermission extends SpecialPermission {
 
@@ -45,11 +42,11 @@ public final class BindDeviceAdminPermission extends SpecialPermission {
         }
     };
 
-    /** BroadcastReceiver class name for the Device Administrator */
+    /** device admin BroadcastReceiver class name */
     @NonNull
     private final String mDeviceAdminReceiverClassName;
 
-    /** Extra explanation when requesting Device Administrator permission */
+    /** requestdevice admin permission description */
     @Nullable
     private final String mExtraAddExplanation;
 
@@ -92,8 +89,7 @@ public final class BindDeviceAdminPermission extends SpecialPermission {
         } else {
             devicePolicyManager = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
         }
-        // Even though this SystemService should never be null,
-        // defensive programming is applied here just in case.
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (devicePolicyManager == null) {
             return false;
         }
@@ -130,10 +126,10 @@ public final class BindDeviceAdminPermission extends SpecialPermission {
 
     @Override
     protected void checkSelfByManifestFile(@NonNull Activity activity,
-                                           @NonNull List<IPermission> requestList,
-                                           @NonNull AndroidManifestInfo manifestInfo,
-                                           @NonNull List<PermissionManifestInfo> permissionInfoList,
-                                           @Nullable PermissionManifestInfo currentPermissionInfo) {
+                                            @NonNull List<IPermission> requestList,
+                                            @NonNull AndroidManifestInfo manifestInfo,
+                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
+                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
 
         List<BroadcastReceiverManifestInfo> receiverInfoList = manifestInfo.receiverInfoList;
@@ -144,18 +140,18 @@ public final class BindDeviceAdminPermission extends SpecialPermission {
             }
 
             if (!PermissionUtils.reverseEqualsString(mDeviceAdminReceiverClassName, receiverInfo.name)) {
-                // Not the target BroadcastReceiver, continue looping
+                // not BroadcastReceiver, continueloop
                 continue;
             }
 
             if (receiverInfo.permission == null || !PermissionUtils.equalsPermission(this, receiverInfo.permission)) {
-                // The BroadcastReceiver component has no permission node or it’s incorrect
-                throw new IllegalArgumentException("Please register a permission node in the AndroidManifest.xml file, for example: "
-                        + "<receiver android:name=\"" + mDeviceAdminReceiverClassName + "\" android:permission=\"" + getPermissionName() + "\" />");
+                // BroadcastReceiver componentdeclare permission node or
+                throw new IllegalArgumentException("Please register permission node in the AndroidManifest.xml file, for example: "
+                    + "<receiver android:name=\"" + mDeviceAdminReceiverClassName + "\" android:permission=\"" + getPermissionName() + "\" />");
             }
 
             String action = DeviceAdminReceiver.ACTION_DEVICE_ADMIN_ENABLED;
-            // Check whether the BroadcastReceiver has the Device Admin action registered
+            // current whether declare device admin broadcast Intent
             boolean registeredDeviceAdminReceiverAction = false;
             List<IntentFilterManifestInfo> intentFilterInfoList = receiverInfo.intentFilterInfoList;
             if (intentFilterInfoList != null) {
@@ -169,14 +165,14 @@ public final class BindDeviceAdminPermission extends SpecialPermission {
 
             if (!registeredDeviceAdminReceiverAction) {
                 String xmlCode = "\t\t<intent-filter>\n"
-                        + "\t\t    <action android:name=\"" + action + "\" />\n"
-                        + "\t\t</intent-filter>";
+                               + "\t\t    <action android:name=\"" + action + "\" />\n"
+                               + "\t\t</intent-filter>";
                 throw new IllegalArgumentException("Please add an intent filter for \"" + mDeviceAdminReceiverClassName +
-                        "\" in the AndroidManifest.xml file.\n" + xmlCode);
+                                                   "\" in the AndroidManifest.xml file.\n" + xmlCode);
             }
 
             String metaDataName = DeviceAdminReceiver.DEVICE_ADMIN_META_DATA;
-            // Check whether the BroadcastReceiver has Device Admin metadata registered
+            // current whether declare device admin broadcast meta-data
             boolean registeredDeviceAdminReceiverMetaData = false;
             List<MetaDataManifestInfo> metaDataInfoList = receiverInfo.metaDataInfoList;
             if (metaDataInfoList != null) {
@@ -190,17 +186,17 @@ public final class BindDeviceAdminPermission extends SpecialPermission {
 
             if (!registeredDeviceAdminReceiverMetaData) {
                 String xmlCode = "\t\t<meta-data>\n"
-                        + "\t\t    android:name=\"" + metaDataName + "\"\n"
-                        + "\t\t    android:resource=\"@xml/device_admin_config\" />";
-                throw new IllegalArgumentException("Please add a meta-data tag for \"" + mDeviceAdminReceiverClassName +
-                        "\" in the AndroidManifest.xml file.\n" + xmlCode);
+                               + "\t\t    android:name=\"" + metaDataName + "\"\n"
+                               + "\t\t    android:resource=\"@xml/device_admin_config" + "\""+ " />";
+                throw new IllegalArgumentException("Please add an meta data for \"" + mDeviceAdminReceiverClassName +
+                                                    "\" in the AndroidManifest.xml file.\n" + xmlCode);
             }
 
-            // Requirements satisfied, stop loop and return
+            // The requirements are satisfied, so stop all loops and return to avoid reaching the exception code below
             return;
         }
 
-        // The BroadcastReceiver component was not registered in the manifest
+        // BroadcastReceiver componentnodeclare in the manifest file
         throw new IllegalArgumentException("The \"" + mDeviceAdminReceiverClassName + "\" component is not registered in the AndroidManifest.xml file");
     }
 

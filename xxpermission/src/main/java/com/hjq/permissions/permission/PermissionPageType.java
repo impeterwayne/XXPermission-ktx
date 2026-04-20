@@ -1,15 +1,12 @@
 package com.hjq.permissions.permission;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/07/13
- *    desc   : Types of permission pages
+ * Permission page type.
  */
 public enum PermissionPageType {
 
-    /** Transparent Activity */
+    /** transparent Activity */
     TRANSPARENT_ACTIVITY,
-    /** Opaque Activity */
+    /** opaque Activity */
     OPAQUE_ACTIVITY
 }

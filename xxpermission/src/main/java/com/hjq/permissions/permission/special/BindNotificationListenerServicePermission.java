@@ -9,9 +9,9 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
+import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import android.text.TextUtils;
 import com.hjq.permissions.manifest.AndroidManifestInfo;
 import com.hjq.permissions.manifest.node.IntentFilterManifestInfo;
 import com.hjq.permissions.manifest.node.PermissionManifestInfo;
@@ -26,17 +26,11 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Notification listener permission class
+ * Notification listener permission class.
  */
 public final class BindNotificationListenerServicePermission extends SpecialPermission {
 
-    /** Current permission name.
-     *  Note: This constant field is for internal framework use only;
-     *  if you need the permission name string, please use {@link PermissionNames}.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.BIND_NOTIFICATION_LISTENER_SERVICE;
 
     public static final Parcelable.Creator<BindNotificationListenerServicePermission> CREATOR = new Parcelable.Creator<BindNotificationListenerServicePermission>() {
@@ -55,7 +49,7 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
     /** Settings.Secure.ENABLED_NOTIFICATION_LISTENERS */
     private static final String SETTING_ENABLED_NOTIFICATION_LISTENERS = "enabled_notification_listeners";
 
-    /** Service class name of the notification listener */
+    /** notification listener Service class name */
     @NonNull
     private final String mNotificationListenerServiceClassName;
 
@@ -90,8 +84,7 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
 
     @Override
     public boolean isGrantedPermission(@NonNull Context context, boolean skipRequest) {
-        // Based on practice, the notification listener permission only appeared on Android 4.3,
-        // so earlier versions always return true.
+        // , Notification listener permission was introduced in Android 4.3, so earlier versions always return true
         if (!PermissionVersion.isAndroid4_3()) {
             return true;
         }
@@ -102,8 +95,8 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
             notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         }
         String serviceClassName = PermissionUtils.isClassExist(mNotificationListenerServiceClassName) ?
-                mNotificationListenerServiceClassName : null;
-        // Even though this SystemService should never be null, we use defensive programming just in case.
+                                    mNotificationListenerServiceClassName : null;
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (PermissionVersion.isAndroid8_1() && notificationManager != null && serviceClassName != null) {
             return notificationManager.isNotificationListenerAccessGranted(new ComponentName(context, serviceClassName));
         }
@@ -111,7 +104,6 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
         if (TextUtils.isEmpty(enabledNotificationListeners)) {
             return false;
         }
-        // Example:
         // com.hjq.permissions.demo/com.hjq.permissions.demo.NotificationMonitorService:com.huawei.health/com.huawei.bone.ui.setting.NotificationPushListener
         final String[] allComponentNameArray = enabledNotificationListeners.split(":");
         for (String component : allComponentNameArray) {
@@ -120,13 +112,13 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
                 continue;
             }
             if (serviceClassName != null) {
-                // Exact match: match both package name and Service class name
+                // Exact match: match the application package name and the Service class name
                 if (context.getPackageName().equals(componentName.getPackageName()) &&
-                        serviceClassName.equals(componentName.getClassName())) {
+                    serviceClassName.equals(componentName.getClassName())) {
                     return true;
                 }
             } else {
-                // Fuzzy match: match by package name only
+                // Fuzzy match: match only the application package name
                 if (context.getPackageName().equals(componentName.getPackageName())) {
                     return true;
                 }
@@ -144,7 +136,7 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
         if (PermissionVersion.isAndroid11() && PermissionUtils.isClassExist(mNotificationListenerServiceClassName)) {
             intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS);
             intent.putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
-                    new ComponentName(context, mNotificationListenerServiceClassName).flattenToString());
+                            new ComponentName(context, mNotificationListenerServiceClassName).flattenToString());
             intentList.add(intent);
         }
 
@@ -177,10 +169,10 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
 
     @Override
     protected void checkSelfByManifestFile(@NonNull Activity activity,
-                                           @NonNull List<IPermission> requestList,
-                                           @NonNull AndroidManifestInfo manifestInfo,
-                                           @NonNull List<PermissionManifestInfo> permissionInfoList,
-                                           @Nullable PermissionManifestInfo currentPermissionInfo) {
+                                            @NonNull List<IPermission> requestList,
+                                            @NonNull AndroidManifestInfo manifestInfo,
+                                            @NonNull List<PermissionManifestInfo> permissionInfoList,
+                                            @Nullable PermissionManifestInfo currentPermissionInfo) {
         super.checkSelfByManifestFile(activity, requestList, manifestInfo, permissionInfoList, currentPermissionInfo);
 
         List<ServiceManifestInfo> serviceInfoList = manifestInfo.serviceInfoList;
@@ -191,14 +183,14 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
             }
 
             if (!PermissionUtils.reverseEqualsString(mNotificationListenerServiceClassName, serviceInfo.name)) {
-                // Not the target Service, continue
+                // This is not the target Service, so continue the loop
                 continue;
             }
 
             if (serviceInfo.permission == null || !PermissionUtils.equalsPermission(this, serviceInfo.permission)) {
-                // The Service component’s permission node is missing or incorrect
-                throw new IllegalArgumentException("Please register a permission node in the AndroidManifest.xml file, for example: "
-                        + "<service android:name=\"" + mNotificationListenerServiceClassName + "\" android:permission=\"" + getPermissionName() + "\" />");
+                // The permission node declared for this Service component is missing or incorrect
+                throw new IllegalArgumentException("Please register permission node in the AndroidManifest.xml file, for example: "
+                    + "<service android:name=\"" + mNotificationListenerServiceClassName + "\" android:permission=\"" + getPermissionName() + "\" />");
             }
 
             String action;
@@ -207,7 +199,7 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
             } else {
                 action = "android.service.notification.NotificationListenerService";
             }
-            // Whether the notification listener service intent is registered
+            // current whether declare notification listener service Intent
             boolean registeredNotificationListenerServiceAction = false;
             List<IntentFilterManifestInfo> intentFilterInfoList = serviceInfo.intentFilterInfoList;
             if (intentFilterInfoList != null) {
@@ -220,18 +212,18 @@ public final class BindNotificationListenerServicePermission extends SpecialPerm
             }
 
             if (registeredNotificationListenerServiceAction) {
-                // All good, stop and return to avoid the exception below
+                // The requirements are satisfied, so stop all loops and return to avoid reaching the exception code below
                 return;
             }
 
             String xmlCode = "\t\t<intent-filter>\n"
-                    + "\t\t    <action android:name=\"" + action + "\" />\n"
-                    + "\t\t</intent-filter>";
+                           + "\t\t    <action android:name=\"" + action + "\" />\n"
+                           + "\t\t</intent-filter>";
             throw new IllegalArgumentException("Please add an intent filter for \"" + mNotificationListenerServiceClassName +
-                    "\" in the AndroidManifest.xml file.\n" + xmlCode);
+                                               "\" in the AndroidManifest.xml file.\n" + xmlCode);
         }
 
-        // This Service component is not registered in the manifest
+        // This Service component is not declared in the manifest file
         throw new IllegalArgumentException("The \"" + mNotificationListenerServiceClassName + "\" component is not registered in the AndroidManifest.xml file");
     }
 

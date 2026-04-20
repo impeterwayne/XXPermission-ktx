@@ -17,18 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/06/11
- *    desc   : Permission class for requesting "Ignore Battery Optimizations"
+ * Ignore battery optimizations permission class.
  */
 public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPermission {
 
-    /**
-     * Current permission name.
-     * Note: This constant field is only for internal use by the framework, not for external reference.
-     * If you need to get the permission name string, please use the {@link PermissionNames} class directly.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS;
 
     public static final Creator<RequestIgnoreBatteryOptimizationsPermission> CREATOR = new Creator<RequestIgnoreBatteryOptimizationsPermission>() {
@@ -62,13 +55,22 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
     @NonNull
     @Override
     public PermissionPageType getPermissionPageType(@NonNull Context context) {
-        // On Android 10, Xiaomi devices still used Google's native page for this special permission
-        // However, starting from Android 11, Xiaomi replaced it with their own customized page
+        // because Android 10 , special permission pageXiaomialso
+        // Android 11 later , permissionpage Xiaomi page
         if (PermissionVersion.isAndroid11() && (DeviceOs.isHyperOs() || DeviceOs.isMiui())) {
             return PermissionPageType.OPAQUE_ACTIVITY;
         }
-        // On OPPO devices with Android 15 and above, this permission page is an opaque Activity
-        if (DeviceOs.isColorOs() && PermissionVersion.isAndroid15()) {
+        // On some ColorOS devices this permission opens an opaque activity. Test results are listed below.
+        // ColorOS 16.0.0(Beta)Android 15 OPPO Find X8: transparent Activity
+        // ColorOS 16.0.0(Beta)Android 15 13: transparent Activity
+        // ColorOS 15.0.2 Android 15 OPPO Find X8s+: opaque Activity
+        // ColorOS 15.0.1 Android 15 2 Pro: opaque Activity
+        // ColorOS 15.0.0 Android 15 OPPO Pad2: opaque Activity
+        // ColorOS 15.0.0 Android 15 12: opaque Activity
+        // ColorOS 14.1.0 Android 14 OPPO Find X7: transparent Activity
+        // ColorOS 14.0.1 Android 14 OPPO A3 Pro 5G: transparent Activity
+        // ColorOS 14.0.0 Android 14 Reno8 Pro: transparent Activity
+        if (DeviceOs.isColorOs() && DeviceOs.getOsBigVersionCode() == 15) {
             return PermissionPageType.OPAQUE_ACTIVITY;
         }
         if (PermissionVersion.isAndroid6() && !isGrantedPermission(context)) {
@@ -92,7 +94,7 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
             return true;
         }
         PowerManager powerManager = context.getSystemService(PowerManager.class);
-        // Although this SystemService is never null, still apply defensive programming just in case
+        // Although this SystemService should never be null, keep the check for defensive programming.
         if (powerManager == null) {
             return false;
         }
@@ -109,11 +111,9 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
         if (PermissionVersion.isAndroid6()) {
             requestIgnoreBatteryOptimizationsIntent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
             requestIgnoreBatteryOptimizationsIntent.setData(getPackageNameUri(context));
-            // Based on testing:
-            // - If already granted, this intent cannot be opened again.
-            //   Otherwise, it opens but immediately finishes, giving the illusion that no page was shown.
-            // - On HyperOS, even if granted, it can still open; but on MIUI and stock Android, it cannot.
-            // Therefore, exclude HyperOS from this check.
+            // , If already authorization case , cannot navigate Intent , otherwisecauses Intent, navigate ,
+            // permission settings pagewill finish, causescode navigate userno has navigatepermission settings page issue
+            // , has HyperOS authorization navigate , MIUI , Android , sohere HyperOS
             if (isGrantedPermission(context, skipRequest) && !DeviceOs.isHyperOs()) {
                 requestIgnoreBatteryOptimizationsIntent = null;
             }
@@ -121,9 +121,9 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
 
         Intent advancedPowerUsageDetailIntent = null;
         if (PermissionVersion.isAndroid12()) {
-            // Battery usage detail page: Settings.ACTION_VIEW_ADVANCED_POWER_USAGE_DETAIL
-            // Although ACTION_VIEW_ADVANCED_POWER_USAGE_DETAIL was added in Android 10,
-            // testing shows it only works starting from Android 12
+            // app casedetails : Settings.ACTION_VIEW_ADVANCED_POWER_USAGE_DETAIL
+            // ACTION_VIEW_ADVANCED_POWER_USAGE_DETAIL Android 10
+            // , Android 10 navigate , has Android 12 navigate
             advancedPowerUsageDetailIntent = new Intent("android.settings.VIEW_ADVANCED_POWER_USAGE_DETAIL");
             advancedPowerUsageDetailIntent.setData(getPackageNameUri(context));
         }
@@ -133,8 +133,8 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
             ignoreBatteryOptimizationSettingsIntent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
         }
 
-        // On Android 10, Xiaomi used the Google native page,
-        // but starting from Android 11, Xiaomi replaced it with their own customized page
+        // because Android 10 , special permission pageXiaomialso
+        // Android 11 later , permissionpage Xiaomi page
         if (skipRequest && !(PermissionVersion.isAndroid11() && (DeviceOs.isHyperOs() || DeviceOs.isMiui()))) {
             if (advancedPowerUsageDetailIntent != null) {
                 intentList.add(advancedPowerUsageDetailIntent);
@@ -158,9 +158,9 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
         }
 
         Intent intent;
-        // Based on testing, MIUI and HyperOS support setting this permission on the app details page:
-        // 1. MIUI: App Details -> Power Saving Strategy
-        // 2. HyperOS: App Details -> Power Consumption
+        // , , MIUI and HyperOS app details pagesettings permission:
+        // 1. MIUI app details page -> battery saver policy
+        // 2. HyperOS app details page -> battery usage
         if (DeviceOs.isHyperOs() || DeviceOs.isMiui()) {
             intent = getApplicationDetailsSettingIntent(context);
             intentList.add(intent);
@@ -184,28 +184,28 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
             return 0;
         }
 
-        // Default wait time for Xiaomi devices
+        // Xiaomi phonedefaultwaits
         final int xiaomiPhoneDefaultWaitTime = 1000;
         if (DeviceOs.isHyperOs()) {
-            // Tested cases:
-            // 1. HyperOS 2.0.112.0, Android 15, Xiaomi 14 → 200 ms is fine
-            // 2. HyperOS 2.0.8.0, Android 15, Xiaomi 12S Pro → 200 ms is fine
-            // 3. HyperOS 2.0.5.0, Android 15, Redmi K60 → 200 ms is fine
-            // 4. HyperOS 2.0.1.0, Android 15, Redmi 14R → 200 ms is fine
-            // 5. HyperOS 2.0.4.0, Android 14, Xiaomi Pad 5 → 200 ms is fine
-            // 6. HyperOS 2.0.1.0, Android 14, Xiaomi 12 Pro Dimensity Edition → 200 ms is fine
-            // 7. HyperOS 1.0.7.0, Android 14, Redmi Note 14 → requires 1000 ms
-            //
-            // Conclusion:
-            // - HyperOS 2.0 and above has no issue (UI was significantly redesigned).
-            // - HyperOS 1.0 on Android 14 still has the problem.
+            // 1. HyperOS 2.0.112.0, Android 15, Xiaomi 14, 200 noissue
+            // 2. HyperOS 2.0.8.0, Android 15, Xiaomi 12S Pro, 200 noissue
+            // 3. HyperOS 2.0.5.0, Android 15, K60, 200 noissue
+            // 4. HyperOS 2.0.1.0, Android 15, 14R, 200 noissue
+            // 5. HyperOS 2.0.4.0, Android 14, Xiaomi 5, 200 noissue
+            // 6. HyperOS 2.0.1.0, Android 14, Xiaomi 12 Pro , 200 noissue
+            // 7. HyperOS 1.0.7.0, Android 14, Note 14, need to 1000
+            // Approximate : HyperOS 2.0 above systemnoissue, HyperOS 2.0 Android versionhas Android 15 and Android 14 ,
+            // Android 14 HyperOS has 1.0 , nofinds Android 14 HyperOS 2.0 version,
+            // so issue HyperOS 2.0 , HyperOS 2.0 UI ( UI has )
+            // result , , otherwisewill , Bug
+            // Android 15 HyperOS 2.0 version 200 noissue, Android 14 version HyperOS 1.0 also has has issue
             if (PermissionVersion.isAndroid15()) {
                 return super.getResultWaitTime(context);
             }
 
             if (PermissionVersion.isAndroid14()) {
                 int osBigVersionCode = DeviceOs.getOsBigVersionCode();
-                // If the big version number is not available or < 2, fall back to Xiaomi default wait time
+                // Ifget version or version 2, returnXiaomidevice modeldefault waits
                 if (osBigVersionCode < 2) {
                     return xiaomiPhoneDefaultWaitTime;
                 }
@@ -216,11 +216,10 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
         }
 
         if (DeviceOs.isMiui() && PermissionVersion.isAndroid11()) {
-            // On Xiaomi devices with Android 11+, requesting this permission requires 1000 ms to detect (800 ms is not enough).
-            // On Android 10, Xiaomi still used Google’s native page.
-            // On Android 11+, Xiaomi replaced it with their own customized page.
-            // Tests on stock Android emulator and Vivo cloud show no issue,
-            // so this bug is confirmed to be Xiaomi-specific.
+            // , Xiaomi Android 11 above version, request permissionneed to 1000 check ( 800 also )
+            // because Android 10 , special permission pageXiaomialso
+            // Android 11 later , permissionpage Xiaomi page
+            // and vivo no issue, so Bug Xiaomi has
             return xiaomiPhoneDefaultWaitTime;
         }
 
@@ -229,7 +228,7 @@ public final class RequestIgnoreBatteryOptimizationsPermission extends SpecialPe
 
     @Override
     protected boolean isRegisterPermissionByManifestFile() {
-        // Indicates that this permission must be statically registered in the AndroidManifest.xml file
+        // Indicates that this permission must be declared statically in AndroidManifest.xml.
         return true;
     }
 }

@@ -13,14 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2023/04/05
- *    desc   : 跳转 Activity 代理类
- */
-/**
- * English: Activity start agent.
- * Starts intents from Context/Activity/Fragment and falls back to settings.
+ * Activity launch agent.
  */
 public final class StartActivityAgent {
 
@@ -37,7 +30,12 @@ public final class StartActivityAgent {
     @SuppressWarnings("deprecation")
     public static void startActivity(@NonNull Fragment fragment,
                                      @NonNull List<Intent> intentList) {
-        startActivity(fragment.getActivity(), new StartActivityDelegateByFragmentApp(fragment), intentList);
+        startActivity(fragment.getActivity(), new StartActivityDelegateByFragmentAndroid(fragment), intentList);
+    }
+
+    public static void startActivity(@NonNull androidx.fragment.app.Fragment fragment,
+                                     @NonNull List<Intent> intentList) {
+        startActivity(fragment.getActivity(), new StartActivityDelegateByFragmentAndroidX(fragment), intentList);
     }
 
     public static void startActivity(@NonNull Context context,
@@ -49,19 +47,19 @@ public final class StartActivityAgent {
             if (PermissionUtils.areActivityIntent(context, intent)) {
                 continue;
             }
-            // 移除那些不存在的 Intent 对象，这样做的好处是：
-            // 1. 拿不存在的 Intent 去跳转必定是失败的（如果项目适配了 Android 11，需要注意适配软件包可见性的特性）
-            // 2. 在 Debug 代码调试的时候，可以很直观看出来有哪些 Intent 是存在的，也可以比较过滤前后的 Intent 列表
+            // Remove Intents that do not exist. This has the following benefits:
+            // 1. Navigating with a non-existent Intent will always fail(If the project targets Android 11, note that package visibility support may also be required)
+            // 2. During debug sessions, this makes it easy to see which Intents actually exist and compare the Intent list before and after filtering
             iterator.remove();
         }
 
-        // 当所有的 Intent 都不存在的时候，那么就默认添加一个 Android 系统设置的 Intent，这样写的原因如下：
-        // 不至于用户一点申请权限就立马提示失败，用户会一头雾水，这样的体验太差了，最起码跳转一下 Android 系统设置页，这样效果会好很多
+        // When none of the Intents exist, add an Android system settings Intent by default for the following reasons:
+        // This prevents the user from seeing an immediate failure as soon as a permission is requested. At minimum, navigating to the Android system settings page provides a much better experience
         if (intentList.isEmpty()) {
             intentList.add(PermissionSettingPage.getAndroidSettingsIntent());
         }
 
-        // 由于 Iterator 接口中没有重置索引的方法，所以这里只能重新获取一次 Iterator 对象
+        // Because Iterator does not provide a way to reset its index, the only option here is to obtain a new Iterator instance
         iterator = intentList.iterator();
         while (iterator.hasNext()) {
             Intent intent = iterator.next();
@@ -70,7 +68,7 @@ public final class StartActivityAgent {
             }
             try {
                 delegate.startActivity(intent);
-                // 跳转成功，结束循环
+                // Navigation succeeded, so stop the loop
                 break;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -88,7 +86,13 @@ public final class StartActivityAgent {
     public static void startActivityForResult(@NonNull Fragment fragment,
                                               @NonNull List<Intent> intentList,
                                               @IntRange(from = 1, to = 65535) int requestCode) {
-        startActivityForResult(fragment.getActivity(), new StartActivityDelegateByFragmentApp(fragment), intentList, requestCode);
+        startActivityForResult(fragment.getActivity(), new StartActivityDelegateByFragmentAndroid(fragment), intentList, requestCode);
+    }
+
+    public static void startActivityForResult(@NonNull androidx.fragment.app.Fragment fragment,
+                                              @NonNull List<Intent> intentList,
+                                              @IntRange(from = 1, to = 65535) int requestCode) {
+        startActivityForResult(fragment.getActivity(), new StartActivityDelegateByFragmentAndroidX(fragment), intentList, requestCode);
     }
 
     public static void startActivityForResult(@NonNull Context context,
@@ -109,20 +113,20 @@ public final class StartActivityAgent {
             if (PermissionUtils.areActivityIntent(context, intent)) {
                 continue;
             }
-            // 移除那些不存在的 Intent 对象，这样做的好处是：
-            // 1. 拿不存在的 Intent 去跳转必定是失败的（如果项目适配了 Android 11，需要注意适配软件包可见性的特性）
-            // 2. 在 Debug 代码调试的时候，可以很直观看出来有哪些 Intent 是存在的，也可以比较过滤前后的 Intent 列表
+            // Remove Intents that do not exist. This has the following benefits:
+            // 1. Navigating with a non-existent Intent will always fail(If the project targets Android 11, note that package visibility support may also be required)
+            // 2. During debug sessions, this makes it easy to see which Intents actually exist and compare the Intent list before and after filtering
             iterator.remove();
         }
 
-        // 当所有的 Intent 都不存在的时候，那么就默认添加一个 Android 系统设置的 Intent，这样写的原因如下：
-        // 1. 不至于用户一点申请权限就立马提示失败，用户会一头雾水，这样的体验太差了，最起码跳转一下 Android 系统设置页，这样效果会好很多
-        // 2. 假设连 Android 系统设置页都跳转失败了，但是这样做可以让系统触发回调 onActivityResult 方法，才使得整个权限请求流程形成闭环
+        // When none of the Intents exist, add an Android system settings Intent by default for the following reasons:
+        // 1. This prevents the user from seeing an immediate failure as soon as a permission is requested. At minimum, navigating to the Android system settings page provides a much better experience
+        // 2. Even if navigation to the Android system settings page also fails, this still lets the system trigger onActivityResult so the entire permission request flow can complete
         if (intentList.isEmpty()) {
             intentList.add(PermissionSettingPage.getAndroidSettingsIntent());
         }
 
-        // 由于 Iterator 接口中没有重置索引的方法，所以这里只能重新获取一次 Iterator 对象
+        // Because Iterator does not provide a way to reset its index, the only option here is to obtain a new Iterator instance
         iterator = intentList.iterator();
         while (iterator.hasNext()) {
             Intent intent = iterator.next();
@@ -131,14 +135,14 @@ public final class StartActivityAgent {
             }
             try {
                 delegate.startActivityForResult(intent, requestCode);
-                // 跳转成功，结束循环
+                // Navigation succeeded, so stop the loop
                 break;
             } catch (Exception e) {
                 // android.content.ActivityNotFoundException: No Activity found to handle Intent { act=android.settings.APPLICATION_DETAILS_SETTINGS dat=package:xxx.xxx.xxx }
                 // java.lang.SecurityException: Permission Denial: starting Intent { act=android.settings.MANAGE_UNKNOWN_APP_SOURCES (has data) cmp=xxxx/.xxx }
                 e.printStackTrace();
-                // 如果下一个 Intent 不为空才去触发失败结果的回调，这是因为如果下一个 Intent 为空，则证明已经没有下一个 Intent 可以再试了，
-                // 那么就不需要记录这次跳转失败的次数，这样前面 startActivityForResult 失败就会导致系统触发 onActivityResult 回调，形成闭环
+                // Only trigger the failure callback when the next Intent is not null, because a null next Intent means there are no more Intents left to try,
+                // so there is no need to count this navigation failure. In that case the earlier startActivityForResult failure will still cause the system to invoke onActivityResult and close the flow correctly
                 if (iterator.hasNext() && ignoreActivityResultCallback != null) {
                     ignoreActivityResultCallback.run();
                 }

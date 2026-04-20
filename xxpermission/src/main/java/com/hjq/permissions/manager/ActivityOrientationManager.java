@@ -6,23 +6,17 @@ import android.content.res.Configuration;
 import android.view.Display;
 import android.view.Surface;
 import android.view.WindowManager;
-
 import androidx.annotation.NonNull;
-
 import com.hjq.permissions.tools.PermissionVersion;
-
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/05/20
- *    desc   : Activity screen orientation manager
+ * Locks and restores activity orientation during permission requests.
  */
 public final class ActivityOrientationManager {
 
-    /** Stores the mapping of Activity and its locked orientation */
+    /** Stores Activity orientation values. */
     private static final Map<Integer, Integer> ACTIVITY_ORIENTATION_MAP = new HashMap<>();
 
     /** Private constructor */
@@ -30,11 +24,9 @@ public final class ActivityOrientationManager {
         // default implementation ignored
     }
 
-    /**
-     * Lock the Activity orientation
-     */
+    /** Locks the current activity orientation. */
     public static synchronized void lockActivityOrientation(@NonNull Activity activity) {
-        // If the screen orientation is not currently unspecified, just return
+        // If the current screen orientation is not locked, the current orientation and lock it
         int sourceScreenOrientation = activity.getRequestedOrientation();
         if (sourceScreenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
             return;
@@ -43,21 +35,20 @@ public final class ActivityOrientationManager {
         int targetScreenOrientation;
         // Lock the current Activity orientation
         try {
-            // Compatibility issue: On Android 8.0 devices, you can lock the Activity orientation,
-            // but the Activity cannot be translucent, otherwise an exception will be thrown.
-            // Reproduction scenario: Set <item name="android:windowIsTranslucent">true</item> in the Activity theme.
+            // Compatibility issue: on Android 8.0 devices, an Activity orientation can be locked, but the Activity must not be translucent or an exception will be thrown
+            // Reproduction case: simply set <item name="android:windowIsTranslucent">true</item> in the Activity theme
             switch (activity.getResources().getConfiguration().orientation) {
                 case Configuration.ORIENTATION_LANDSCAPE:
                     targetScreenOrientation = isActivityReverse(activity) ?
-                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE :
-                            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                                                ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE :
+                                                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
                     activity.setRequestedOrientation(targetScreenOrientation);
                     ACTIVITY_ORIENTATION_MAP.put(getIntKeyByActivity(activity), targetScreenOrientation);
                     break;
                 case Configuration.ORIENTATION_PORTRAIT:
                     targetScreenOrientation = isActivityReverse(activity) ?
-                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT :
-                            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT :
+                                            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
                     activity.setRequestedOrientation(targetScreenOrientation);
                     ACTIVITY_ORIENTATION_MAP.put(getIntKeyByActivity(activity), targetScreenOrientation);
                     break;
@@ -70,11 +61,9 @@ public final class ActivityOrientationManager {
         }
     }
 
-    /**
-     * Unlock the Activity orientation
-     */
+    /** Restores automatic activity orientation. */
     public static synchronized void unlockActivityOrientation(@NonNull Activity activity) {
-        // If the Activity has not locked its orientation, return
+        // If the current Activity is not locked, return directly
         if (activity.getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
             return;
         }
@@ -82,19 +71,17 @@ public final class ActivityOrientationManager {
         if (targetScreenOrientation == null) {
             return;
         }
-        // Check if the Activity was previously set to unspecified orientation
-        // (this check may always be false, but is kept for robustness)
+        // Check whether the Activity was previously set to auto-rotate. This may always be false, but the extra check keeps the code safer
         if (targetScreenOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
             return;
         }
-        // Why no try/catch here like above?
-        // Because here we are resetting the orientation to unspecified.
-        // Crashes only occur when forcing portrait/landscape, not when unlocking.
+        // A try/catch is not used here like because this path only removes the fixed Activity orientation. A crash is only likely when explicitly setting landscape or portrait
         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        ACTIVITY_ORIENTATION_MAP.remove(getIntKeyByActivity(activity));
     }
 
     /**
-     * Determine whether the Activity is rotated in reverse
+     * Check whether the Activity is rotated in the reverse direction.
      */
     @SuppressWarnings("deprecation")
     private static boolean isActivityReverse(@NonNull Activity activity) {
@@ -112,7 +99,7 @@ public final class ActivityOrientationManager {
             return false;
         }
 
-        // Get the rotation angle of the Activity
+        // Get the Activity rotation angle
         int activityRotation = display.getRotation();
         switch (activityRotation) {
             case Surface.ROTATION_180:
@@ -126,10 +113,10 @@ public final class ActivityOrientationManager {
     }
 
     /**
-     * Get an int key based on the Activity
+     * Get an int key from the Activity.
      */
     private static int getIntKeyByActivity(@NonNull Activity activity) {
-        // Use the Activity's hashCode as the key to avoid duplicates
+        // Use the Activity hashCode as the key here so duplicates are avoided
         return activity.hashCode();
     }
 }

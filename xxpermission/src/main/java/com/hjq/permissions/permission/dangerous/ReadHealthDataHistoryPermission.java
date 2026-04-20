@@ -12,19 +12,11 @@ import com.hjq.permissions.tools.PermissionVersion;
 import java.util.List;
 
 /**
- *    author : Android Wheel Brother
- *    github : https://github.com/getActivity/XXPermissions
- *    time   : 2025/07/14
- *    desc   : Permission class for reading past health data
+ * Read historical health data permission class.
  */
 public final class ReadHealthDataHistoryPermission extends HealthDataBasePermission {
 
-    /** Current permission name.
-     *  Note: This constant field is for internal framework use only,
-     *  not provided for external references.
-     *  If you need to get the permission name string,
-     *  please obtain it directly from {@link PermissionNames}.
-     */
+    /** Current permission name. Note: this constant field is for internal framework use only and is not exposed externally. If you need the permission name string, it directly from {@link PermissionNames}. */
     public static final String PERMISSION_NAME = PermissionNames.READ_HEALTH_DATA_HISTORY;
 
     public static final Creator<ReadHealthDataHistoryPermission> CREATOR = new Creator<ReadHealthDataHistoryPermission>() {
@@ -70,15 +62,15 @@ public final class ReadHealthDataHistoryPermission extends HealthDataBasePermiss
             if (PermissionUtils.equalsPermission(permission, this)) {
                 thisPermissionIndex = i;
             } else if (PermissionApi.isHealthPermission(permission) &&
-                    !PermissionUtils.equalsPermission(permission, PermissionNames.READ_HEALTH_DATA_IN_BACKGROUND)) {
+                !PermissionUtils.equalsPermission(permission, PermissionNames.READ_HEALTH_DATA_IN_BACKGROUND)) {
                 otherHealthDataPermissionIndex = i;
             }
         }
 
         if (otherHealthDataPermissionIndex != -1 && otherHealthDataPermissionIndex > thisPermissionIndex) {
-            // Please place READ_HEALTH_DATA_HISTORY permission after other health data permissions
+            // please READ_HEALTH_DATA_HISTORY permission health datapermission after it
             throw new IllegalArgumentException("Please place the \"" + getPermissionName() +
-                    "\" permission after the \"" + requestList.get(otherHealthDataPermissionIndex) + "\" permission");
+                "\" permission after the \"" + requestList.get(otherHealthDataPermissionIndex) + "\" permission");
         }
     }
 }
