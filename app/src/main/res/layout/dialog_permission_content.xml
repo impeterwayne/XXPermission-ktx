@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    app:cardBackgroundColor="?attr/colorSurface"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <ImageView
+            android:id="@+id/iv_permission_icon"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_gravity="center_horizontal"
+            android:contentDescription="@string/permission_dialog_image_description"
+            android:src="@android:drawable/ic_dialog_info"
+            app:tint="?attr/colorPrimary" />
+
+        <TextView
+            android:id="@+id/tv_permission_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+            android:textColor="?attr/colorOnSurface"
+            tools:text="Permission Needed" />
+
+        <TextView
+            android:id="@+id/tv_permission_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+            android:textColor="?attr/colorOnSurface"
+            tools:text="Allow access so this feature can continue working as expected." />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_permission_positive"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            tools:text="Grant" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_permission_negative"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            tools:text="Cancel" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

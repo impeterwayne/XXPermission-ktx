@@ -3,7 +3,6 @@ package com.genesys.sample
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.genesys.sample.databinding.ActivityMainBinding
 import com.hjq.permissions.XXPermissions
@@ -14,6 +13,7 @@ import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private val permissionDialogContentMapper by lazy { PermissionDialogContentMapper(this) }
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,9 +26,9 @@ class MainActivity : AppCompatActivity() {
                 permissions(PermissionLists.getReadMediaVisualUserSelectedPermission())
                 permissions(PermissionLists.getWriteExternalStoragePermission())
                 onDoNotAskAgain { permissions, userResult ->
-                    showDoNotAskAgainDialog(permissions[0],userResult)
+                    showDoNotAskAgainDialog(permissions[0], userResult)
                 }
-                onResult { allGranted, grantedData, deniedData ->
+                onResult { allGranted, _, deniedData ->
                     if (allGranted) {
                         startActivity(Intent(this@MainActivity, PhotoPickerActivity::class.java))
                     } else {
@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
                 PermissionLists.getReadMediaVisualUserSelectedPermission()
             )
             val isRestricted = hasSelectedOnly && !hasFullImages
-            Timber.tag("Here").d("Restrict: ${hasFullImages}")
+            Timber.tag("Here").d("Restrict: $hasFullImages, selectedOnly: $hasSelectedOnly, isRestricted: $isRestricted")
         }
 
         binding.btnSequencePermission.setOnClickListener {
@@ -61,83 +61,57 @@ class MainActivity : AppCompatActivity() {
                 )
                 onShouldShowRationale { shouldShowRationaleList, onUserResult ->
                     Timber.tag("Rationale").d("$shouldShowRationaleList")
-                  showRationaleDialog(shouldShowRationaleList[0], onUserResult)
+                    showRationaleDialog(shouldShowRationaleList[0], onUserResult)
                 }
                 onDoNotAskAgain { doNotAskAgainList, onUserResult ->
                     Timber.tag("Ask").d("$doNotAskAgainList")
-                   showDoNotAskAgainDialog(doNotAskAgainList[0], onUserResult)
+                    showDoNotAskAgainDialog(doNotAskAgainList[0], onUserResult)
                 }
 
-                onResult { allGranted, grantedList, deniedList ->
+                onResult { allGranted, _, deniedList ->
                     if (allGranted) {
                         Timber.tag("Here").d("All sequence permissions granted!")
                     } else {
-                        Timber.tag("Here")
-                            .w("Sequence permissions denied: %s", deniedList)
+                        Timber.tag("Here").w("Sequence permissions denied: %s", deniedList)
                     }
                 }
             }
         }
     }
 
-    /**
-     * Shows a specific rationale dialog for a given permission.
-     */
     private fun showRationaleDialog(permission: String, onUserResult: OnUserResultCallback) {
-        val context = this@MainActivity
-        // Get a specific message based on the permission
-        val message = when (permission) {
-            PermissionLists.getPostNotificationsPermission().getPermissionName() -> "We need notification permission to send you important updates and alerts."
-            PermissionLists.getUseFullScreenIntentPermission().getPermissionName() -> "This permission is required to show critical alerts (like an incoming call) as full-screen notifications."
-            PermissionLists.getScheduleExactAlarmPermission().getPermissionName() -> "We need to schedule exact alarms for timely reminders and critical tasks."
-            PermissionLists.getSystemAlertWindowPermission().getPermissionName() -> "This permission allows the app to display information over other apps, which is needed for some features."
-            else -> "This permission is required for the app to function properly." // Fallback
-        }
-
-        AlertDialog.Builder(context)
-            .setTitle("Permission Needed")
-            .setMessage(message)
-            .setPositiveButton("Grant") { dialog, _ ->
-                onUserResult.onResult(true)
-                dialog.dismiss()
-            }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                onUserResult.onResult(false)
-                dialog.dismiss()
-            }
-            .setCancelable(false) // Force user to make a choice
-            .show()
+        val content = permissionDialogContentMapper.map(permission, isDoNotAskAgain = false)
+        showPermissionDialog(
+            content = content,
+            positiveButtonText = getString(R.string.permission_button_grant),
+            negativeButtonText = getString(R.string.permission_button_cancel),
+            onUserResult = onUserResult
+        )
     }
 
-    /**
-     * Shows a dialog explaining that the user has permanently denied a permission
-     * and offers to take them to settings.
-     */
-    private fun showDoNotAskAgainDialog(
-        permission: String,
+    private fun showDoNotAskAgainDialog(permission: String, onUserResult: OnUserResultCallback) {
+        val content = permissionDialogContentMapper.map(permission, isDoNotAskAgain = true)
+        showPermissionDialog(
+            content = content,
+            positiveButtonText = getString(R.string.permission_button_go_to_settings),
+            negativeButtonText = getString(R.string.permission_button_cancel),
+            onUserResult = onUserResult
+        )
+    }
+
+    private fun showPermissionDialog(
+        content: PermissionDialogContent,
+        positiveButtonText: String,
+        negativeButtonText: String,
         onUserResult: OnUserResultCallback
     ) {
-        val context = this@MainActivity
-        val message = when (permission) {
-            PermissionLists.getPostNotificationsPermission().getPermissionName() -> "You have permanently denied notification permission. To enable it, please go to the app settings."
-            PermissionLists.getUseFullScreenIntentPermission().getPermissionName() -> "You have permanently denied the full-screen intent permission. Please go to app settings to enable it."
-            PermissionLists.getScheduleExactAlarmPermission().getPermissionName() -> "You have permanently denied scheduling exact alarms. Please go to app settings to enable it."
-            PermissionLists.getSystemAlertWindowPermission().getPermissionName() -> "You have permanently denied the 'display over other apps' permission. Please go to app settings to enable it."
-            else -> "You have permanently denied a required permission. Please go to app settings to enable it."
-        }
-
-        AlertDialog.Builder(context)
-            .setTitle("Permission Denied")
-            .setMessage(message)
-            .setPositiveButton("Go to Settings") { dialog, _ ->
-                onUserResult.onResult(true)
-                dialog.dismiss()
-            }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                onUserResult.onResult(false)
-                dialog.dismiss()
-            }
-            .setCancelable(false)
-            .show()
+        PermissionDialogFragment.show(
+            fragmentManager = supportFragmentManager,
+            content = content,
+            positiveButtonText = positiveButtonText,
+            negativeButtonText = negativeButtonText,
+            onUserResult = onUserResult
+        )
     }
+
 }

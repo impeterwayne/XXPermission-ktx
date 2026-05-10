@@ -37,3 +37,30 @@ xxPermissions {
     }
 }
 ```
+
+### Request multiple permissions
+
+```kotlin
+xxPermissions {
+    permissions(
+        PermissionLists.getSystemAlertWindowPermission(true),
+        PermissionLists.getPostNotificationsPermission()
+    )
+    onShouldShowRationale { permissions, userResult ->
+        // Explain why these permissions are needed.
+        // userResult.onResult(true) will continue the request flow.
+    }
+    onDoNotAskAgain { permissions, userResult ->
+        // Explain that some permissions were permanently denied
+        // and optionally send the user to app settings.
+        // userResult.onResult(true) will open settings.
+    }
+    onResult { allGranted, grantedList, deniedList ->
+        if (allGranted) {
+            // All permissions granted.
+        } else {
+            // Handle partially granted or denied permissions.
+        }
+    }
+}
+```

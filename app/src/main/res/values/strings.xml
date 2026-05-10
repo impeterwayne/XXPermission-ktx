@@ -1,3 +1,31 @@
 <resources>
     <string name="app_name">XXpermission-ktx</string>
+    <string name="permission_dialog_image_description">Permission explanation icon</string>
+    <string name="permission_button_grant">Grant</string>
+    <string name="permission_button_cancel">Cancel</string>
+    <string name="permission_button_go_to_settings">Go to Settings</string>
+    <string name="permission_notification_needed_title">Notification Permission Needed</string>
+    <string name="permission_notification_denied_title">Notification Permission Denied</string>
+    <string name="permission_notification_needed_description">Allow notification permission so the app can send you important updates and alerts.</string>
+    <string name="permission_notification_denied_description">You have permanently denied notification permission. Open app settings to enable alerts and important updates.</string>
+    <string name="permission_full_screen_needed_title">Full-Screen Alert Permission Needed</string>
+    <string name="permission_full_screen_denied_title">Full-Screen Alert Permission Denied</string>
+    <string name="permission_full_screen_needed_description">Allow this permission so the app can show critical alerts, such as an incoming call, in full screen.</string>
+    <string name="permission_full_screen_denied_description">You have permanently denied the full-screen alert permission. Open app settings to allow critical alerts such as incoming calls.</string>
+    <string name="permission_exact_alarm_needed_title">Exact Alarm Permission Needed</string>
+    <string name="permission_exact_alarm_denied_title">Exact Alarm Permission Denied</string>
+    <string name="permission_exact_alarm_needed_description">Allow exact alarm permission so reminders and time-sensitive tasks can run at the correct moment.</string>
+    <string name="permission_exact_alarm_denied_description">You have permanently denied exact alarm permission. Open app settings to restore timely reminders and scheduled tasks.</string>
+    <string name="permission_overlay_needed_title">Display Over Apps Permission Needed</string>
+    <string name="permission_overlay_denied_title">Display Over Apps Permission Denied</string>
+    <string name="permission_overlay_needed_description">Allow this permission so the app can display important information on top of other apps when needed.</string>
+    <string name="permission_overlay_denied_description">You have permanently denied display-over-apps permission. Open app settings to allow floating information on top of other apps.</string>
+    <string name="permission_media_needed_title">Media Permission Needed</string>
+    <string name="permission_media_denied_title">Media Permission Denied</string>
+    <string name="permission_media_needed_description">Allow media access so the app can let you select, view, and manage the images required for this flow.</string>
+    <string name="permission_media_denied_description">You have permanently denied media access. Open app settings to allow photo selection and image access.</string>
+    <string name="permission_default_needed_title">Permission Needed</string>
+    <string name="permission_default_denied_title">Permission Denied</string>
+    <string name="permission_default_needed_description">This permission is required for the app to function properly.</string>
+    <string name="permission_default_denied_description">You have permanently denied a required permission. Open app settings to enable it.</string>
 </resources>
