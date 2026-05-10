@@ -46,14 +46,15 @@ xxPermissions {
         PermissionLists.getSystemAlertWindowPermission(true),
         PermissionLists.getPostNotificationsPermission()
     )
-    onShouldShowRationale { permissions, userResult ->
-        // Explain why these permissions are needed.
-        // userResult.onResult(true) will continue the request flow.
+    onShouldShowRationale { shouldShowRationaleList, onUserResult ->
+        // Use a mapper to get the dialog content for the first denied permission (shouldShowRationaleList[0]).
+        // Show a dialog explaining why these permissions are needed.
+        // onUserResult.onResult(true) will continue the request flow.
     }
-    onDoNotAskAgain { permissions, userResult ->
-        // Explain that some permissions were permanently denied
-        // and optionally send the user to app settings.
-        // userResult.onResult(true) will open settings.
+    onDoNotAskAgain { doNotAskAgainList, onUserResult ->
+        // Use a mapper to get the dialog content for the first denied permission (doNotAskAgainList[0]).
+        // Explain that some permissions were permanently denied and send the user to settings.
+        // onUserResult.onResult(true) will open settings.
     }
     onResult { allGranted, grantedList, deniedList ->
         if (allGranted) {
