@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.genesys.v1.xxpermission_ktx'
+    namespace 'com.genesys.sample'
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.genesys.v1.xxpermission_ktx"
+        applicationId "com.genesys.sample"
         minSdk 24
         targetSdk 36
         versionCode 1
