@@ -1,4 +1,4 @@
-package com.genesys.v1.xxpermission_ktx
+package com.genesys.sample
 
 import android.app.Application
 import timber.log.Timber.DebugTree

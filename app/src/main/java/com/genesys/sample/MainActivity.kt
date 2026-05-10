@@ -1,11 +1,11 @@
-package com.genesys.v1.xxpermission_ktx
+package com.genesys.sample
 
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.genesys.v1.xxpermission_ktx.databinding.ActivityMainBinding
+import com.genesys.sample.databinding.ActivityMainBinding
 import com.hjq.permissions.XXPermissions
 import com.hjq.permissions.dsl.OnUserResultCallback
 import com.hjq.permissions.dsl.xxPermissions
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnSequencePermission.setOnClickListener {
             xxPermissions {
                 permissions(
-                    PermissionLists.getSystemAlertWindowPermission(),
+                    PermissionLists.getSystemAlertWindowPermission(true),
                     PermissionLists.getPostNotificationsPermission(),
                     PermissionLists.getUseFullScreenIntentPermission(),
                     PermissionLists.getScheduleExactAlarmPermission()

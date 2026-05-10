@@ -195,11 +195,23 @@ public final class PermissionLists {
      */
     @NonNull
     public static IPermission getSystemAlertWindowPermission() {
-        IPermission permission = getCachePermission(SystemAlertWindowPermission.PERMISSION_NAME);
-        if (permission != null) {
-            return permission;
+        return getSystemAlertWindowPermission(false);
+    }
+
+    /**
+     * Returns the system alert window permission.
+     * @param forceXiaomi when true, on eligible Xiaomi devices, navigates to the Xiaomi permission page
+     *                    and additionally checks Xiaomi-specific ops (background start, show when locked, popup window).
+     */
+    @NonNull
+    public static IPermission getSystemAlertWindowPermission(boolean forceXiaomi) {
+        if (!forceXiaomi) {
+            IPermission permission = getCachePermission(SystemAlertWindowPermission.PERMISSION_NAME);
+            if (permission != null) {
+                return permission;
+            }
         }
-        return putCachePermission(new SystemAlertWindowPermission());
+        return putCachePermission(new SystemAlertWindowPermission(forceXiaomi));
     }
 
     /** Returns the write system settings permission. */
