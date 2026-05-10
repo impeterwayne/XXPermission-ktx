@@ -40,6 +40,118 @@ class XXPermissionsExt private constructor(private val activity: Activity) {
         }
     }
 
+    private class PermissionRequestInterceptor(
+        private val rationaleHandler: OnPermissionsShouldShowRationale?,
+        private val doNotAskAgainHandler: OnPermissionsDoNotAskAgain?
+    ) : OnPermissionInterceptor {
+
+        override fun onRequestPermissionStart(
+            activity: Activity,
+            requestList: List<IPermission>,
+            fragmentFactory: PermissionFragmentFactory<*, *>,
+            permissionDescription: OnPermissionDescription,
+            callback: OnPermissionCallback?
+        ) {
+            val rationalePermissions = findRationalePermissions(activity, requestList)
+            if (rationaleHandler == null || rationalePermissions.isEmpty()) {
+                continueRequest(activity, requestList, fragmentFactory, permissionDescription, callback)
+                return
+            }
+
+            rationaleHandler.onShouldShowRationale(rationalePermissions) { isAgree ->
+                if (isAgree) {
+                    continueRequest(activity, requestList, fragmentFactory, permissionDescription, callback)
+                } else {
+                    finishWithCurrentState(activity, requestList, callback)
+                }
+            }
+        }
+
+        override fun onRequestPermissionEnd(
+            activity: Activity,
+            skipRequest: Boolean,
+            requestList: List<IPermission>,
+            grantedList: List<IPermission>,
+            deniedList: List<IPermission>,
+            callback: OnPermissionCallback?
+        ) {
+            val doNotAskAgainPermissions = findDoNotAskAgainPermissions(activity, deniedList)
+            if (deniedList.isEmpty() || doNotAskAgainHandler == null || doNotAskAgainPermissions.isEmpty()) {
+                callback?.onResult(grantedList, deniedList)
+                return
+            }
+
+            doNotAskAgainHandler.onDoNotAskAgain(doNotAskAgainPermissions.map { it.getPermissionName() }) { isAgree ->
+                if (isAgree) {
+                    openSettings(activity, doNotAskAgainPermissions)
+                }
+                callback?.onResult(grantedList, deniedList)
+            }
+        }
+
+        private fun continueRequest(
+            activity: Activity,
+            requestList: List<IPermission>,
+            fragmentFactory: PermissionFragmentFactory<*, *>,
+            permissionDescription: OnPermissionDescription,
+            callback: OnPermissionCallback?
+        ) {
+            dispatchPermissionRequest(activity, requestList, fragmentFactory, permissionDescription, callback)
+        }
+
+        private fun findRationalePermissions(
+            activity: Activity,
+            requestList: List<IPermission>
+        ): List<String> {
+            return requestList
+                .filter { shouldShowRationale(activity, it) }
+                .map { it.getPermissionName() }
+        }
+
+        private fun shouldShowRationale(activity: Activity, permission: IPermission): Boolean {
+            return try {
+                when {
+                    permission.getPermissionChannel(activity) != PermissionChannel.START_ACTIVITY -> {
+                        ActivityCompat.shouldShowRequestPermissionRationale(activity, permission.getPermissionName())
+                    }
+                    permission is SpecialPermission -> !permission.isGrantedPermission(activity)
+                    else -> false
+                }
+            } catch (_: Exception) {
+                false
+            }
+        }
+
+        private fun finishWithCurrentState(
+            activity: Activity,
+            requestList: List<IPermission>,
+            callback: OnPermissionCallback?
+        ) {
+            val granted = requestList.filter { it.isGrantedPermission(activity) }
+            val denied = requestList.filterNot { it.isGrantedPermission(activity) }
+            callback?.onResult(granted, denied)
+        }
+
+        private fun findDoNotAskAgainPermissions(
+            activity: Activity,
+            deniedList: List<IPermission>
+        ): List<IPermission> {
+            return deniedList.filter { it.isDoNotAskAgainPermission(activity) }
+        }
+
+        private fun openSettings(activity: Activity, permissions: List<IPermission>) {
+            val intents = PermissionSettingPage.getCommonPermissionSettingIntent(
+                activity,
+                *permissions.toTypedArray()
+            )
+            StartActivityAgent.startActivityForResult(
+                activity,
+                intents,
+                XXPermissions.REQUEST_CODE
+            )
+        }
+    }
+
     fun permissions(vararg permissions: IPermission): XXPermissionsExt {
         permissionList.addAll(permissions)
         return this
@@ -75,86 +187,10 @@ class XXPermissionsExt private constructor(private val activity: Activity) {
         XXPermissions.with(activity)
             .permissions(permissionList)
             .interceptor(
-                object : OnPermissionInterceptor {
-                    override fun onRequestPermissionStart(
-                        activity: Activity,
-                        requestList: List<IPermission>,
-                        fragmentFactory: PermissionFragmentFactory<*, *>,
-                        permissionDescription: OnPermissionDescription,
-                        callback: OnPermissionCallback?
-                    ) {
-                        val rationaleHandler = onShouldShowRationale
-                        if (rationaleHandler == null) {
-                            dispatchPermissionRequest(activity, requestList, fragmentFactory, permissionDescription, callback)
-                            return
-                        }
-
-                        val rationalePermissions = requestList.filter { permission ->
-                            try {
-                                if (permission.getPermissionChannel(activity) != PermissionChannel.START_ACTIVITY) {
-                                    ActivityCompat.shouldShowRequestPermissionRationale(
-                                        activity,
-                                        permission.getPermissionName()
-                                    )
-                                } else if (permission is SpecialPermission) {
-                                    !permission.isGrantedPermission(activity)
-                                } else {
-                                    false
-                                }
-                            } catch (_: Exception) {
-                                false
-                            }
-                        }.map { it.getPermissionName() }
-
-                        if (rationalePermissions.isEmpty()) {
-                            dispatchPermissionRequest(activity, requestList, fragmentFactory, permissionDescription, callback)
-                            return
-                        }
-
-                        rationaleHandler.onShouldShowRationale(rationalePermissions) { isAgree ->
-                            if (isAgree) {
-                                dispatchPermissionRequest(activity, requestList, fragmentFactory, permissionDescription, callback)
-                            } else {
-                                val granted = requestList.filter { it.isGrantedPermission(activity) }
-                                val denied = requestList.filterNot { it.isGrantedPermission(activity) }
-                                callback?.onResult(granted, denied)
-                            }
-                        }
-                    }
-
-                    override fun onRequestPermissionEnd(
-                        activity: Activity,
-                        skipRequest: Boolean,
-                        requestList: List<IPermission>,
-                        grantedList: List<IPermission>,
-                        deniedList: List<IPermission>,
-                        callback: OnPermissionCallback?
-                    ) {
-                        val doNotAskAgainHandler = onDoNotAskAgain
-                        if (deniedList.isNotEmpty() && doNotAskAgainHandler != null) {
-                            val doNotAskAgainList = deniedList.filter { it.isDoNotAskAgainPermission(activity) }
-                            if (doNotAskAgainList.isNotEmpty()) {
-                                val permissionNames = doNotAskAgainList.map { it.getPermissionName() }
-                                doNotAskAgainHandler.onDoNotAskAgain(permissionNames) { isAgree ->
-                                    if (isAgree) {
-                                        val intents = PermissionSettingPage.getCommonPermissionSettingIntent(
-                                            activity,
-                                            *doNotAskAgainList.toTypedArray()
-                                        )
-                                        StartActivityAgent.startActivityForResult(
-                                            activity,
-                                            intents,
-                                            XXPermissions.REQUEST_CODE
-                                        )
-                                    }
-                                    callback?.onResult(grantedList, deniedList)
-                                }
-                                return
-                            }
-                        }
-                        callback?.onResult(grantedList, deniedList)
-                    }
-                }
+                PermissionRequestInterceptor(
+                    rationaleHandler = onShouldShowRationale,
+                    doNotAskAgainHandler = onDoNotAskAgain
+                )
             )
             .request { grantedList, deniedList ->
                 val grantedNames = grantedList.map { it.permissionName }
