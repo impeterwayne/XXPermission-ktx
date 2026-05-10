@@ -82,17 +82,17 @@ public final class SystemAlertWindowPermission extends SpecialPermission {
         Intent intent;
 
         if (PermissionVersion.isAndroid6()) {
-            // If the current system is HyperOS, do not navigate to the MIUI permission settings page, becausealso " permission"entry findssystem alert window permission settingsoption
-            // this means also directlynavigate allapp system alert window permission settingslist,
+            // If the current system is HyperOS, do not navigate to the MIUI permission settings page, because also " permission" entry finds system alert window permission settings option
+            // this means also directly navigate all app system alert window permission settings list,
             // Related GitHub issue:https://github.com/getActivity/XXPermissions/issues/342
             if (PermissionVersion.isAndroid11() && !DeviceOs.isHyperOs() &&
                         (DeviceOs.isMiui() && DeviceOs.isMiuiOptimization())) {
-                // because Android 11 after it version directlynavigate permission settings page, navigate system alert window permissionapp list, , here
+                // because Android 11 after it version directly navigate permission settings page, navigate system alert window permission app list, here
                 // MIUI , will navigate issue, vendor , navigate
                 intent = PermissionSettingPage.getXiaoMiApplicationPermissionPageIntent(context);
                 intentList.add(intent);
             } else if (DeviceOs.isFlyme()) {
-                // Meizu phone directlynavigate permission settings page, this means need to app list finds app authorization
+                // Meizu phone directly navigate permission settings page, this means need to app list finds app authorization
                 intent = PermissionSettingPage.getMeiZuApplicationPermissionPageIntent(context);
                 intentList.add(intent);
             }
